@@ -230,6 +230,7 @@ const FACE_COLORS=[
   'rgba(230,126,34,0.85)','rgba(211,84,0,0.85)'
 ];
 const FACE_LABELS=['前','后','上','下','左','右'];
+const FACE_AREAS=[()=>L*H,()=>L*H,()=>L*W,()=>L*W,()=>W*H,()=>W*H];
 
 // ==================== 3D Projection ====================
 function project3D(x,y,z,rxa,rya){
@@ -255,6 +256,8 @@ function buildTransforms(l,w,h,explode){
   ];
 }
 
+function fmt(n){return Number.isInteger(n)?n:n.toFixed(1);}
+
 function updateCuboid(){
   let trans=buildTransforms(L,W,H,explodeAmt);
   for(let i=0;i<6;i++){
@@ -268,9 +271,8 @@ function updateCuboid(){
   }
   if(paintData){
     paintData.faces.forEach(i=>{
-      let el=FACES[i];
-      el.style.background='rgba(231,76,60,0.9)';
-      el.textContent='已涂';
+      FACES[i].style.background='rgba(231,76,60,0.9)';
+      FACES[i].textContent='已涂';
     });
     let unpi=paintData.faces.length===0;
     let allpi=paintData.faces.length===6;
@@ -287,13 +289,18 @@ function updateCuboid(){
 }
 
 function updateInfo(){
-  let lw=L*W,lh=L*H,wh=W*H;
-  let S=2*(lw+lh+wh);
   let V=L*W*H;
-  infoPanel.innerHTML=
-    '<strong>表面积 S</strong> = 2×('+lw+'+'+lh+'+'+wh+') = '+S+' cm²<br>'+
-    '<strong>体积 V</strong> = '+L+'×'+W+'×'+H+' = '+V+' cm³<br>'+
-    '顶点 8 · 棱 12 · 面 6 · 相对面 '+(L===W&&W===H?1:(L===W||W===H||L===H?2:3))+'对相等';
+  let html='<strong>长</strong>='+fmt(L)+'cm <strong>宽</strong>='+fmt(W)+'cm <strong>高</strong>='+fmt(H)+'cm<br>';
+  html+='<strong>表面积 S</strong> = 2×('+fmt(L)+'×'+fmt(W)+'+'+fmt(L)+'×'+fmt(H)+'+'+fmt(W)+'×'+fmt(H)+') = '+fmt(2*(L*W+L*H+W*H))+' cm²<br>';
+  html+='<strong>体积 V</strong> = '+fmt(L)+'×'+fmt(W)+'×'+fmt(H)+' = '+fmt(V)+' cm³';
+
+  if(paintData&&paintData.faces.length>0){
+    let paintArea=0;
+    paintData.faces.forEach(i=>{paintArea+=FACE_AREAS[i]();});
+    html+='<br><strong style="color:#e74c3c">涂色面积</strong> = '+fmt(paintArea)+' cm² ('+paintData.faces.length+'个面)';
+  }
+  html+='<br>顶点 8 · 棱 12 · 面 6';
+  infoPanel.innerHTML=html;
 }
 
 // ==================== Handles ====================
@@ -316,7 +323,7 @@ function updateHandles(){
   hL.style.display=vis;hW.style.display=vis;hH.style.display=vis;
 }
 
-// ==================== Drag: Rotate ====================
+// ==================== Drag: Rotate + Resize ====================
 let isDragging=false,lastX=0,lastY=0;
 cuboidArea.addEventListener('mousedown',e=>{
   if(curTool==='resize')return;
@@ -325,21 +332,16 @@ cuboidArea.addEventListener('mousedown',e=>{
   e.preventDefault();
 });
 window.addEventListener('mousemove',e=>{
-  if(curTool==='resize'){
-    if(dragData){
-      let dx=e.clientX-dragData.sx,dy=e.clientY-dragData.sy;
-      let change=0;
-      if(dragData.dim==='L')change=Math.round(dx/SCALE);
-      else if(dragData.dim==='W')change=Math.round(dx/SCALE);
-      else if(dragData.dim==='H')change=Math.round(-dy/SCALE);
-      if(change!==0){
-        let newVal=Math.max(1.5,Math.min(dragData.dim==='H'?8:10,dragData.startVal+change*0.5));
-        if(dragData.dim==='L'){L=newVal;sliderL.value=L;}
-        else if(dragData.dim==='W'){W=newVal;sliderW.value=W;}
-        else{H=newVal;sliderH.value=H;}
-        updateSliders();updateCuboid();
-      }
-    }
+  if(curTool==='resize'&&dragData){
+    let dx=e.clientX-dragData.sx,dy=e.clientY-dragData.sy;
+    let ndir=dragData.normal;
+    let dot=dx*ndir.x+dy*ndir.y;
+    let sensitivity=0.07;
+    let newVal=Math.round((dragData.startVal+dot*sensitivity)*2)/2;
+    let minV=dragData.dim==='H'?2:2,maxV=dragData.dim==='H'?8:10;
+    newVal=Math.max(minV,Math.min(maxV,newVal));
+    if(dragData.dim==='L')L=newVal;else if(dragData.dim==='W')W=newVal;else H=newVal;
+    updateSliders();updateCuboid();
     return;
   }
   if(!isDragging)return;
@@ -352,15 +354,17 @@ window.addEventListener('mousemove',e=>{
 });
 window.addEventListener('mouseup',()=>{isDragging=false;dragData=null;});
 
-// Handle drag
 function setupHandleDrag(handle,dim){
   handle.addEventListener('mousedown',e=>{
     e.stopPropagation();e.preventDefault();
-    dragData={
-      dim:dim,
-      sx:e.clientX,sy:e.clientY,
-      startVal:dim==='L'?L:dim==='W'?W:H
-    };
+    let nx=0,ny=0;
+    if(dim==='L'){nx=1;ny=0;}
+    else if(dim==='W'){nx=0;ny=1;}
+    else{nx=0;ny=-1;}
+    let ndir=project3D(nx,ny,0,rx*Math.PI/180,ry*Math.PI/180);
+    let len=Math.sqrt(ndir.x*ndir.x+ndir.y*ndir.y)||1;
+    ndir.x/=len;ndir.y/=len;
+    dragData={dim:dim,sx:e.clientX,sy:e.clientY,startVal:dim==='L'?L:dim==='W'?W:H,normal:ndir};
   });
 }
 setupHandleDrag(hL,'L');
@@ -386,7 +390,7 @@ document.querySelectorAll('.tool-btn').forEach(btn=>{
     if(curTool==='resize'){
       modeHint.textContent='拖动红色圆点改变长/宽/高';
     }else if(curTool==='paint'){
-      modeHint.textContent='点击面来涂色，计算涂色面积';
+      modeHint.textContent='点击面来涂色，左侧面板显示涂色面积';
       if(!paintData)paintData={faces:[]};
       updateCuboid();
     }else{
@@ -397,7 +401,6 @@ document.querySelectorAll('.tool-btn').forEach(btn=>{
   });
 });
 
-// Face click for paint mode
 FACES.forEach((face,i)=>{
   face.addEventListener('click',e=>{
     if(curTool!=='paint')return;
@@ -407,7 +410,8 @@ FACES.forEach((face,i)=>{
     if(idx>=0)paintData.faces.splice(idx,1);
     else paintData.faces.push(i);
     updateCuboid();
-    showToast(paintData.faces.length+' 个面已涂色');
+    let pa=0;paintData.faces.forEach(j=>{pa+=FACE_AREAS[j]();});
+    showToast(paintData.faces.length+'面涂色 = '+fmt(pa)+' cm²');
   });
 });
 
@@ -419,10 +423,10 @@ document.querySelectorAll('.mode-btn[data-mode]').forEach(btn=>{
     curMode=btn.dataset.mode;
     if(curMode==='normal'){explodeAmt=0;updateCuboid();}
     else if(curMode==='explode'){
-      document.querySelectorAll('.mode-btn[data-mode="normal"]').forEach(b=>b.classList.add('active'));
+      setTimeout(()=>document.querySelectorAll('.mode-btn[data-mode="normal"]').forEach(b=>b.classList.add('active')),100);
       animateExplode();
     }else if(curMode==='fillcube'){
-      document.querySelectorAll('.mode-btn[data-mode="normal"]').forEach(b=>b.classList.add('active'));
+      setTimeout(()=>document.querySelectorAll('.mode-btn[data-mode="normal"]').forEach(b=>b.classList.add('active')),100);
       animateFillCubes();
     }
   });
@@ -451,39 +455,40 @@ function animateExplode(){
 }
 
 function animateFillCubes(){
-  let V=Math.floor(L*W*H);
+  let iL=Math.round(L),iW=Math.round(W),iH=Math.round(H);
+  let totalCubes=iL*iW*iH;
+  let realV=L*W*H;
+
   let area=cuboidArea;
   let areaRect=area.getBoundingClientRect();
   let cx=areaRect.width/2,cy=areaRect.height/2;
 
-  let duration=2000,startTime=performance.now();
+  let duration=Math.min(3000,Math.max(1000,totalCubes*20));
+  let startTime=performance.now();
   let cubeEls=[];
+
+  showToast('填充中... 共 '+totalCubes+' 个 1cm³ 小正方体');
 
   function step(t){
     let elapsed=t-startTime;
-    let count=Math.min(V,Math.floor(V*elapsed/duration));
-    let progress=elapsed/duration;
+    let count=Math.min(totalCubes,Math.floor(totalCubes*elapsed/duration));
 
     while(cubeEls.length<count){
       let idx=cubeEls.length;
-      let z=Math.floor(idx/(L*W));
-      let y=Math.floor((idx%(L*W))/L);
-      let x=idx%L;
-      let x3d=-L/2+x+0.5,y3d=-H/2+z+0.5,z3d=-W/2+y+0.5;
+      let z=Math.floor(idx/(iL*iW));
+      let y=Math.floor((idx%(iL*iW))/iL);
+      let x=idx%iL;
+      let x3d=-iL/2+x+0.5,y3d=-iH/2+z+0.5,z3d=-iW/2+y+0.5;
       let p=project3D(x3d,y3d,z3d,rx*Math.PI/180,ry*Math.PI/180);
       let el=document.createElement('div');
-      el.style.cssText=`position:absolute;width:6px;height:6px;background:#e74c3c;border-radius:1px;left:${cx+p.x*SCALE}px;top:${cy+p.y*SCALE}px;transform:translate(-50%,-50%);pointer-events:none;opacity:0.8;`;
+      el.style.cssText=`position:absolute;width:5px;height:5px;background:#e74c3c;border-radius:1px;left:${cx+p.x*SCALE}px;top:${cy+p.y*SCALE}px;transform:translate(-50%,-50%);pointer-events:none;opacity:0.85;`;
       area.appendChild(el);cubeEls.push(el);
     }
 
-    cubeEls.forEach(e=>{e.style.opacity='1';});
-
-    if(count<V)requestAnimationFrame(step);
+    if(count<totalCubes)requestAnimationFrame(step);
     else{
-      showToast('共 '+V+' 个 1cm³ 小正方体');
-      setTimeout(()=>{
-        cubeEls.forEach(e=>e.remove());
-      },2000);
+      showToast('共 '+totalCubes+' 个 1cm³ 小正方体 · 体积 = '+fmt(realV)+' cm³');
+      setTimeout(()=>{cubeEls.forEach(e=>e.remove());},2500);
     }
   }
   requestAnimationFrame(step);
@@ -520,12 +525,12 @@ document.querySelectorAll('.quick-btn').forEach(btn=>{
 
 // ==================== Quiz ====================
 const QUIZ=[
-  {q:'长方体长8cm、宽5cm、高4cm，表面积是多少？',o:['184 cm²','160 cm²','92 cm²','200 cm²'],a:0},
-  {q:'正方体棱长3cm，体积是多少？',o:['9 cm³','27 cm³','54 cm³','18 cm³'],a:1},
-  {q:'一个面的面积是15cm²，长方体有几个这样的面？',o:['1个','2个','3个','6个'],a:1,explain:'相对的面面积相等，共2个'},
-  {q:'正方体棱长扩大2倍，体积扩大几倍？',o:['2倍','4倍','6倍','8倍'],a:3},
-  {q:'棱长4cm的正方体，表面积是多少？',o:['96 cm²','64 cm²','48 cm²','16 cm²'],a:0},
-  {q:'一个长方体体积60cm³，底面积20cm²，高是多少？',o:['2 cm','40 cm','3 cm','4 cm'],a:2},
+  {q:'长方体长8cm、宽5cm、高4cm，表面积是多少？',o:['184 cm²','160 cm²','92 cm²','200 cm²'],a:0,explain:'S=2×(8×5+8×4+5×4)=2×92=184'},
+  {q:'正方体棱长3cm，体积是多少？',o:['9 cm³','27 cm³','54 cm³','18 cm³'],a:1,explain:'V=3×3×3=27'},
+  {q:'相对的面面积相等，长方体最多有几组相等的面？',o:['1组','2组','3组','6组'],a:2,explain:'前=后，左=右，上=下，共3组'},
+  {q:'正方体棱长扩大2倍，体积扩大几倍？',o:['2倍','4倍','6倍','8倍'],a:3,explain:'(2a)³=8a³'},
+  {q:'棱长4cm的正方体，表面积是多少？',o:['96 cm²','64 cm²','48 cm²','16 cm²'],a:0,explain:'S=6×4×4=96'},
+  {q:'长方体体积60cm³，底面积20cm²，高是多少？',o:['2 cm','40 cm','3 cm','4 cm'],a:2,explain:'高=V÷底面积=60÷20=3'},
 ];
 let qzI=0,qzC=0,qzL=false;
 
@@ -553,8 +558,8 @@ function loadQuizQ(){
 function answerQZ(chosen,el){
   if(qzL)return;qzL=true;
   let q=QUIZ[qzI],all=qzOpts.querySelectorAll('.quiz-opt');
-  if(chosen===q.a){qzC++;el.classList.add('correct');qzFb.textContent='正确！'+(q.explain||'');qzFb.className='quiz-fb correct';}
-  else{el.classList.add('wrong');all[q.a].classList.add('correct');qzFb.textContent='错误。'+(q.explain||'');qzFb.className='quiz-fb wrong';}
+  if(chosen===q.a){qzC++;el.classList.add('correct');qzFb.textContent='正确！'+q.explain;qzFb.className='quiz-fb correct';}
+  else{el.classList.add('wrong');all[q.a].classList.add('correct');qzFb.textContent='错误。'+q.explain;qzFb.className='quiz-fb wrong';}
   all.forEach(o=>o.style.pointerEvents='none');
   qzNext.style.display='inline-block';
   qzNext.onclick=()=>{qzI++;loadQuizQ();};
@@ -562,13 +567,11 @@ function answerQZ(chosen,el){
 function hideQuiz(){quizOverlay.style.display='none';}
 btnQuiz.addEventListener('click',showQuiz);
 
-// ==================== Toast ====================
 function showToast(msg){
   toast.textContent=msg;toast.classList.add('show');
-  setTimeout(()=>toast.classList.remove('show'),1200);
+  setTimeout(()=>toast.classList.remove('show'),1500);
 }
 
-// ==================== Init ====================
 updateSliders();updateCuboid();
 </script>
 </body>
