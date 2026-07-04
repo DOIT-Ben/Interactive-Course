@@ -177,6 +177,7 @@ body{
         <div class="cuboid-face" id="f3" style="background:rgba(30,132,73,0.85)">下</div>
         <div class="cuboid-face" id="f4" style="background:rgba(230,126,34,0.85)">左</div>
         <div class="cuboid-face" id="f5" style="background:rgba(211,84,0,0.85)">右</div>
+        <div id="cubeContainer" style="position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;pointer-events:none"></div>
       </div>
 
       <div class="drag-handle label-l" id="hL" style="display:none">
@@ -421,6 +422,7 @@ document.querySelectorAll('.mode-btn[data-mode]').forEach(btn=>{
     document.querySelectorAll('.mode-btn[data-mode]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     curMode=btn.dataset.mode;
+    cleanFillCubes();
     if(curMode==='normal'){explodeAmt=0;updateCuboid();}
     else if(curMode==='explode'){
       setTimeout(()=>document.querySelectorAll('.mode-btn[data-mode="normal"]').forEach(b=>b.classList.add('active')),100);
@@ -459,39 +461,60 @@ function animateFillCubes(){
   let totalCubes=iL*iW*iH;
   let realV=L*W*H;
 
-  let area=cuboidArea;
-  let areaRect=area.getBoundingClientRect();
-  let cx=areaRect.width/2,cy=areaRect.height/2;
+  let container=document.getElementById('cubeContainer');
+  container.style.transform=container.style.transition='';
+  container.innerHTML='';
 
-  let duration=Math.min(3000,Math.max(1000,totalCubes*20));
-  let startTime=performance.now();
-  let cubeEls=[];
+  let faces=wrapper.children;
+  for(let i=0;i<6;i++)faces[i].style.opacity='0.35';
 
   showToast('填充中... 共 '+totalCubes+' 个 1cm³ 小正方体');
 
-  function step(t){
-    let elapsed=t-startTime;
-    let count=Math.min(totalCubes,Math.floor(totalCubes*elapsed/duration));
+  let cw=SCALE*iL,ch=SCALE*iH,cd=SCALE*iW;
+  container.style.width=cw+'px';
+  container.style.height=ch+'px';
+  container.style.marginLeft=(-cw/2)+'px';
+  container.style.marginTop=(-ch/2)+'px';
 
-    while(cubeEls.length<count){
-      let idx=cubeEls.length;
-      let z=Math.floor(idx/(iL*iW));
-      let y=Math.floor((idx%(iL*iW))/iL);
-      let x=idx%iL;
-      let x3d=-iL/2+x+0.5,y3d=-iH/2+z+0.5,z3d=-iW/2+y+0.5;
-      let p=project3D(x3d,y3d,z3d,rx*Math.PI/180,ry*Math.PI/180);
-      let el=document.createElement('div');
-      el.style.cssText=`position:absolute;width:5px;height:5px;background:#e74c3c;border-radius:1px;left:${cx+p.x*SCALE}px;top:${cy+p.y*SCALE}px;transform:translate(-50%,-50%);pointer-events:none;opacity:0.85;`;
-      area.appendChild(el);cubeEls.push(el);
-    }
-
-    if(count<totalCubes)requestAnimationFrame(step);
-    else{
-      showToast('共 '+totalCubes+' 个 1cm³ 小正方体 · 体积 = '+fmt(realV)+' cm³');
-      setTimeout(()=>{cubeEls.forEach(e=>e.remove());},2500);
+  let cubes=[];
+  for(let iz=0;iz<iH;iz++){
+    for(let iy=0;iy<iW;iy++){
+      for(let ix=0;ix<iL;ix++){
+        let x3d=(-iL/2+ix+0.5)*SCALE;
+        let y3d=(-iH/2+iz+0.5)*SCALE;
+        let z3d=(-iW/2+iy+0.5)*SCALE;
+        let el=document.createElement('div');
+        let s=Math.max(2,SCALE-4);
+        el.style.cssText=`position:absolute;width:${s}px;height:${s}px;background:#e74c3c;border-radius:2px;left:50%;top:50%;margin-left:${-s/2}px;margin-top:${-s/2}px;transform:translate3d(${x3d}px,${y3d}px,${z3d}px);opacity:0;transition:opacity 0.2s;`;
+        container.appendChild(el);
+        cubes.push(el);
+      }
     }
   }
-  requestAnimationFrame(step);
+
+  showToast('共 '+totalCubes+' 个 1cm³ 小正方体 · 体积 = '+fmt(realV)+' cm³');
+
+  let revealed=0;
+  function revealBatch(){
+    if(revealed>=totalCubes)return;
+    let batch=Math.min(8,totalCubes-revealed);
+    for(let i=0;i<batch;i++)cubes[revealed+i].style.opacity='0.9';
+    revealed+=batch;
+    if(revealed<totalCubes)setTimeout(revealBatch,30);
+    else setTimeout(()=>{
+      for(let i=0;i<6;i++)faces[i].style.opacity='0.85';
+      cubes.forEach(e=>{e.style.transition='opacity 0.6s';e.style.opacity='0';});
+      setTimeout(()=>{container.innerHTML='';},700);
+    },2000);
+  }
+  setTimeout(revealBatch,100);
+}
+
+function cleanFillCubes(){
+  let container=document.getElementById('cubeContainer');
+  container.innerHTML='';
+  let faces=wrapper.children;
+  for(let i=0;i<6;i++)faces[i].style.opacity='0.85';
 }
 
 // ==================== Auto Rotate ====================
