@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长方体和正方体 - 五年级数学</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+  background:linear-gradient(135deg,#e8f0fe 0%,#f3e8ff 50%,#fef3e0 100%);
+  display:flex;justify-content:center;align-items:flex-start;
+  min-height:100vh;padding:14px;
+}
+.container{
+  background:#fff;border-radius:20px;
+  box-shadow:0 4px 30px rgba(0,0,0,0.08);
+  max-width:860px;width:100%;padding:24px 30px;
+}
+h1{text-align:center;color:#1a1a2e;font-size:25px;letter-spacing:1px}
+.subtitle{text-align:center;color:#999;font-size:13px;margin-bottom:16px}
+.tabs{display:flex;gap:4px;margin-bottom:18px;justify-content:center;flex-wrap:wrap}
+.tab{
+  padding:8px 16px;border-radius:20px;cursor:pointer;
+  background:#f0f0f7;color:#666;font-size:13px;font-weight:600;
+  border:2px solid transparent;transition:all 0.3s;user-select:none
+}
+.tab.active{background:#5b6abf;color:#fff;border-color:#5b6abf;box-shadow:0 3px 10px rgba(91,106,191,0.3)}
+.tab:hover:not(.active){background:#e0e0ec}
+.section{display:none}
+.section.active{display:block}
+
+.control-row{display:flex;gap:12px;margin-top:12px;justify-content:center;align-items:center;flex-wrap:wrap}
+.btn{
+  padding:9px 20px;border-radius:22px;border:none;cursor:pointer;
+  font-size:14px;font-weight:600;transition:all 0.25s;user-select:none
+}
+.btn-primary{background:#5b6abf;color:#fff;box-shadow:0 3px 10px rgba(91,106,191,0.3)}
+.btn-primary:hover{background:#4a5aaf;transform:translateY(-1px)}
+.btn-secondary{background:#f5f5fa;color:#555;border:2px solid #ddd}
+.btn-secondary:hover{background:#eaeaef}
+.btn-accent{background:#e67e22;color:#fff}
+.btn-accent:hover{background:#d35400}
+
+.slider-row{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.slider-group{display:flex;align-items:center;gap:6px}
+.slider-group label{font-size:13px;color:#555;font-weight:600;white-space:nowrap}
+.slider-group input[type=range]{width:100px;accent-color:#5b6abf}
+.slider-group .val{font-size:15px;font-weight:700;color:#5b6abf;background:#eef0ff;border-radius:6px;padding:2px 8px;min-width:28px;text-align:center}
+
+.info-cards{display:flex;gap:10px;margin-top:12px;justify-content:center;flex-wrap:wrap}
+.info-card{
+  background:#f8f9fc;border-radius:12px;padding:12px 18px;
+  text-align:center;border-left:3px solid #5b6abf
+}
+.info-card .num{font-size:24px;font-weight:800;color:#5b6abf}
+.info-card .label{font-size:11px;color:#888;margin-top:2px}
+
+.formula-box{
+  background:linear-gradient(135deg,#fffde7,#fff9c4);
+  border:2px solid #f9a825;border-radius:14px;
+  padding:14px 20px;text-align:center;margin-top:14px;
+  font-size:16px;color:#795548;line-height:2
+}
+.formula-box .big{font-size:22px;font-weight:800;color:#c0392b}
+
+.toggle-row{display:flex;gap:14px;justify-content:center;align-items:center;margin-top:8px;flex-wrap:wrap}
+.toggle-label{display:flex;align-items:center;gap:5px;font-size:13px;color:#555;cursor:pointer}
+.toggle-label input{accent-color:#5b6abf}
+
+canvas{display:block;margin:0 auto;border-radius:12px;background:#fafbfe}
+
+/* CSS 3D Cuboid */
+.cuboid-scene{
+  perspective:900px;width:500px;height:380px;margin:0 auto;
+  position:relative;overflow:visible;
+}
+.cuboid-wrapper{
+  position:absolute;left:50%;top:50%;width:0;height:0;
+  transform-style:preserve-3d;cursor:grab;
+}
+.cuboid-wrapper:active{cursor:grabbing}
+.cuboid-face{
+  position:absolute;left:50%;top:50%;
+  border:2px solid rgba(0,0,0,0.4);
+  box-sizing:border-box;
+  opacity:0.75;transition:opacity 0.3s;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:rgba(0,0,0,0.5);
+  pointer-events:none;
+}
+.cuboid-face.hidden{opacity:0}
+
+.face-legend{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.face-dot{display:flex;align-items:center;gap:4px;font-size:12px;color:#555}
+.face-dot span{width:14px;height:14px;border-radius:3px;display:inline-block}
+
+.quiz-area{text-align:center;min-height:300px}
+.quiz-progress{font-size:13px;color:#999;margin-bottom:8px}
+.quiz-question{font-size:17px;color:#2c3e50;margin-bottom:16px;line-height:1.8;padding:0 20px}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:440px;margin:0 auto}
+.quiz-option{
+  padding:14px;border-radius:12px;cursor:pointer;background:#f5f5fa;
+  border:2px solid #e0e0e8;font-size:15px;font-weight:600;color:#444;
+  transition:all 0.2s
+}
+.quiz-option:hover{transform:translateY(-2px);box-shadow:0 3px 12px rgba(0,0,0,0.06)}
+.quiz-option.correct{background:#d5f5e3;border-color:#27ae60;color:#1e7e34}
+.quiz-option.wrong{background:#fadbd8;border-color:#e74c3c;color:#c0392b}
+.feedback{margin-top:12px;font-size:15px;font-weight:600;min-height:24px}
+.feedback.correct{color:#27ae60}
+.feedback.wrong{color:#e74c3c}
+.summary{text-align:center;padding:30px 0}
+.summary .score{font-size:52px;font-weight:800;color:#5b6abf}
+.summary .msg{font-size:18px;color:#555;margin-top:10px}
+.hint-text{text-align:center;color:#888;font-size:13px;margin-top:6px}
+
+.unfold-scene{
+  perspective:1200px;width:780px;height:400px;margin:0 auto;
+  position:relative;overflow:visible;
+}
+.unfold-wrapper{
+  position:absolute;left:50%;top:50%;width:0;height:0;
+  transform-style:preserve-3d;
+}
+.unfold-face{
+  position:absolute;left:50%;top:50%;
+  border:2px solid rgba(0,0,0,0.5);
+  box-sizing:border-box;opacity:0.7;
+  transition:transform 0.6s cubic-bezier(0.4,0,0.2,1),
+             margin 0.6s cubic-bezier(0.4,0,0.2,1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#333;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>长方体和正方体</h1>
+<p class="subtitle">人教版五年级下册 · 表面积与体积</p>
+
+<div class="tabs">
+  <div class="tab active" data-id="know">认识图形</div>
+  <div class="tab" data-id="net">展开图</div>
+  <div class="tab" data-id="surface">表面积</div>
+  <div class="tab" data-id="volume">体积</div>
+  <div class="tab" data-id="practice">综合练习</div>
+</div>
+
+<!-- ========== Tab 1: 认识图形 ========== -->
+<div class="section active" id="sec-know">
+  <div class="cuboid-scene" id="cuboidScene">
+    <div class="cuboid-wrapper" id="cuboidWrapper">
+      <div class="cuboid-face" id="faceFront" style="background:#5b6abf;">前</div>
+      <div class="cuboid-face" id="faceBack" style="background:#4a5290;">后</div>
+      <div class="cuboid-face" id="faceTop" style="background:#27ae60;">上</div>
+      <div class="cuboid-face" id="faceBottom" style="background:#1e8449;">下</div>
+      <div class="cuboid-face" id="faceLeft" style="background:#e67e22;">左</div>
+      <div class="cuboid-face" id="faceRight" style="background:#d35400;">右</div>
+    </div>
+  </div>
+  <div class="face-legend">
+    <div class="face-dot"><span style="background:#5b6abf"></span> 前面</div>
+    <div class="face-dot"><span style="background:#4a5290"></span> 后面</div>
+    <div class="face-dot"><span style="background:#27ae60"></span> 上面</div>
+    <div class="face-dot"><span style="background:#1e8449"></span> 下面</div>
+    <div class="face-dot"><span style="background:#e67e22"></span> 左面</div>
+    <div class="face-dot"><span style="background:#d35400"></span> 右面</div>
+  </div>
+  <div class="toggle-row">
+    <label class="toggle-label"><input type="checkbox" id="showFaces" checked> 显示面</label>
+    <label class="toggle-label"><input type="checkbox" id="showEdges" checked> 显示棱</label>
+    <label class="toggle-label"><input type="checkbox" id="isCubeK"> 正方体模式</label>
+  </div>
+  <div class="slider-row">
+    <div class="slider-group"><label>长(cm):</label><input type="range" id="dimL" min="2" max="10" value="6" step="0.5"><span class="val" id="valL">6</span></div>
+    <div class="slider-group"><label>宽(cm):</label><input type="range" id="dimW" min="2" max="10" value="4" step="0.5"><span class="val" id="valW">4</span></div>
+    <div class="slider-group"><label>高(cm):</label><input type="range" id="dimH" min="2" max="8" value="3" step="0.5"><span class="val" id="valH">3</span></div>
+    <button class="btn btn-secondary" id="btnResetView">重置视角</button>
+  </div>
+  <div class="info-cards">
+    <div class="info-card"><div class="num">8</div><div class="label">顶点</div></div>
+    <div class="info-card"><div class="num">12</div><div class="label">棱</div></div>
+    <div class="info-card"><div class="num">6</div><div class="label">面</div></div>
+    <div class="info-card"><div class="num" id="pairCount" style="color:#e67e22">3</div><div class="label">相对的面(相等)</div></div>
+  </div>
+  <p class="hint-text">拖动图形可旋转观察</p>
+</div>
+
+<!-- ========== Tab 2: 展开图 ========== -->
+<div class="section" id="sec-net">
+  <div class="unfold-scene" id="unfoldScene" style="height:420px">
+    <div class="unfold-wrapper" id="unfoldWrapper">
+      <div class="unfold-face" id="uf0" style="background:#5b6abf;">前</div>
+      <div class="unfold-face" id="uf1" style="background:#4a5290;">后</div>
+      <div class="unfold-face" id="uf2" style="background:#27ae60;">上</div>
+      <div class="unfold-face" id="uf3" style="background:#1e8449;">下</div>
+      <div class="unfold-face" id="uf4" style="background:#e67e22;">左</div>
+      <div class="unfold-face" id="uf5" style="background:#d35400;">右</div>
+    </div>
+  </div>
+  <div class="control-row">
+    <div class="slider-group"><label>长:</label><input type="range" id="netL" min="2" max="8" value="6" step="0.5"><span class="val" id="valNetL">6</span></div>
+    <div class="slider-group"><label>宽:</label><input type="range" id="netW" min="2" max="8" value="4" step="0.5"><span class="val" id="valNetW">4</span></div>
+    <div class="slider-group"><label>高:</label><input type="range" id="netH" min="2" max="6" value="3" step="0.5"><span class="val" id="valNetH">3</span></div>
+    <button class="btn btn-primary" id="btnUnfold">展开</button>
+    <button class="btn btn-secondary" id="btnFold">折叠</button>
+    <button class="btn btn-accent" id="btnAutoUnfold">自动演示</button>
+  </div>
+</div>
+
+<!-- ========== Tab 3: 表面积 ========== -->
+<div class="section" id="sec-surface">
+  <div class="cuboid-scene" style="height:340px" id="surfScene">
+    <div class="cuboid-wrapper" id="surfWrapper">
+      <div class="cuboid-face" id="sf0" style="background:#5b6abf;">前</div>
+      <div class="cuboid-face" id="sf1" style="background:#4a5290;">后</div>
+      <div class="cuboid-face" id="sf2" style="background:#27ae60;">上</div>
+      <div class="cuboid-face" id="sf3" style="background:#1e8449;">下</div>
+      <div class="cuboid-face" id="sf4" style="background:#e67e22;">左</div>
+      <div class="cuboid-face" id="sf5" style="background:#d35400;">右</div>
+    </div>
+  </div>
+  <div class="control-row">
+    <div class="slider-group"><label>长:</label><input type="range" id="surfL" min="2" max="10" value="6" step="0.5"><span class="val" id="valSurfL">6</span></div>
+    <div class="slider-group"><label>宽:</label><input type="range" id="surfW" min="2" max="10" value="4" step="0.5"><span class="val" id="valSurfW">4</span></div>
+    <div class="slider-group"><label>高:</label><input type="range" id="surfH" min="2" max="8" value="3" step="0.5"><span class="val" id="valSurfH">3</span></div>
+  </div>
+  <div class="control-row">
+    <button class="btn btn-secondary" data-hl="0" id="hlFront">高亮前/后</button>
+    <button class="btn btn-secondary" data-hl="1" id="hlLR">高亮左/右</button>
+    <button class="btn btn-secondary" data-hl="2" id="hlTB">高亮上/下</button>
+    <button class="btn btn-secondary" data-hl="-1" id="hlAll">全部</button>
+  </div>
+  <div class="formula-box" id="surfFormula"></div>
+</div>
+
+<!-- ========== Tab 4: 体积 ========== -->
+<div class="section" id="sec-volume">
+  <canvas id="cVolume" width="780" height="360"></canvas>
+  <div class="control-row">
+    <div class="slider-group"><label>长:</label><input type="range" id="volL" min="1" max="6" value="4" step="1"><span class="val" id="valVolL">4</span></div>
+    <div class="slider-group"><label>宽:</label><input type="range" id="volW" min="1" max="6" value="3" step="1"><span class="val" id="valVolW">3</span></div>
+    <div class="slider-group"><label>高:</label><input type="range" id="volH" min="1" max="5" value="2" step="1"><span class="val" id="valVolH">2</span></div>
+    <button class="btn btn-accent" id="btnToggleCubes">切换单位立方体</button>
+  </div>
+  <div class="formula-box" id="volFormula"></div>
+</div>
+
+<!-- ========== Tab 5: 综合练习 ========== -->
+<div class="section" id="sec-practice">
+  <div class="quiz-area" id="qzArea">
+    <div class="quiz-progress" id="qzProgress"></div>
+    <div class="quiz-question" id="qzQuestion"></div>
+    <canvas id="cQuiz" width="400" height="180" style="margin-bottom:8px"></canvas>
+    <div class="quiz-options" id="qzOptions"></div>
+    <div class="feedback" id="qzFeedback"></div>
+    <button class="btn btn-primary" id="btnNextQz" style="display:none;margin-top:8px">下一题</button>
+  </div>
+  <div class="summary" id="qzSummary" style="display:none"></div>
+</div>
+
+</div>
+
+<script>
+// ==================== CSS 3D 长方体工具函数 ====================
+const FACE_COLORS=['#5b6abf','#4a5290','#27ae60','#1e8449','#e67e22','#d35400'];
+const FACE_LABELS=['前','后','上','下','左','右'];
+
+function buildFaceTransforms(L,W,H,scale) {
+  let hL=L*scale/2, hW=W*scale/2, hH=H*scale/2;
+  return [
+    {w:L*scale,h:H*scale,ml:-L*scale/2,mt:-H*scale/2,t:`translate3d(0,0,${hW}px)`},
+    {w:L*scale,h:H*scale,ml:-L*scale/2,mt:-H*scale/2,t:`translate3d(0,0,${-hW}px) rotateY(180deg)`},
+    {w:L*scale,h:W*scale,ml:-L*scale/2,mt:-W*scale/2,t:`translate3d(0,${-hH}px,0) rotateX(90deg)`},
+    {w:L*scale,h:W*scale,ml:-L*scale/2,mt:-W*scale/2,t:`translate3d(0,${hH}px,0) rotateX(-90deg)`},
+    {w:W*scale,h:H*scale,ml:-W*scale/2,mt:-H*scale/2,t:`translate3d(${-hL}px,0,0) rotateY(-90deg)`},
+    {w:W*scale,h:H*scale,ml:-W*scale/2,mt:-H*scale/2,t:`translate3d(${hL}px,0,0) rotateY(90deg)`}
+  ];
+}
+
+function applyFaces(faces, transforms, show) {
+  const ids=['faceFront','faceBack','faceTop','faceBottom','faceLeft','faceRight'];
+  for(let i=0;i<6;i++){
+    let el=faces[i];
+    if(!el)continue;
+    let t=transforms[i];
+    el.style.width=t.w+'px';el.style.height=t.h+'px';
+    el.style.marginLeft=t.ml+'px';el.style.marginTop=t.mt+'px';
+    el.style.transform=t.t;
+    el.classList.toggle('hidden',!show);
+    el.textContent=FACE_LABELS[i]+'\n'+['L×H','L×H','L×W','L×W','W×H','W×H'][i];
+  }
+}
+
+// ==================== Tab 1: 认识图形 ====================
+let knowRX=-22, knowRY=32, knowDrag=false, knowLastX=0, knowLastY=0;
+const knowFaces=[faceFront,faceBack,faceTop,faceBottom,faceLeft,faceRight];
+
+function updateKnowCuboid() {
+  let L=parseFloat(dimL.value),W=parseFloat(dimW.value),H=parseFloat(dimH.value);
+  let isCube=isCubeK.checked;
+  if(isCube){W=L;H=L;dimW.value=L;dimH.value=L;}
+  valL.textContent=L;valW.textContent=W;valH.textContent=H;
+  dimW.disabled=isCube;dimH.disabled=isCube;
+
+  let trans=buildFaceTransforms(L,W,H,28);
+  applyFaces(knowFaces,trans,showFaces.checked);
+  cuboidWrapper.style.transform=`rotateX(${knowRX}deg) rotateY(${knowRY}deg)`;
+
+  let pairs=(L===W&&W===H)?1:(L===W||W===H||L===H?2:3);
+  pairCount.textContent=pairs;
+}
+
+function setupKnowDrag() {
+  let scene=cuboidScene;
+  scene.addEventListener('mousedown',e=>{knowDrag=true;knowLastX=e.clientX;knowLastY=e.clientY;e.preventDefault();});
+  window.addEventListener('mousemove',e=>{
+    if(!knowDrag)return;
+    knowRY+=(e.clientX-knowLastX)*0.5;
+    knowRX-=(e.clientY-knowLastY)*0.5;
+    knowRX=Math.max(-60,Math.min(60,knowRX));
+    knowLastX=e.clientX;knowLastY=e.clientY;
+    cuboidWrapper.style.transform=`rotateX(${knowRX}deg) rotateY(${knowRY}deg)`;
+  });
+  window.addEventListener('mouseup',()=>{knowDrag=false;});
+}
+
+dimL.addEventListener('input',updateKnowCuboid);
+dimW.addEventListener('input',updateKnowCuboid);
+dimH.addEventListener('input',updateKnowCuboid);
+isCubeK.addEventListener('change',updateKnowCuboid);
+showFaces.addEventListener('change',updateKnowCuboid);
+btnResetView.addEventListener('click',()=>{knowRX=-22;knowRY=32;updateKnowCuboid();});
+setupKnowDrag();
+updateKnowCuboid();
+
+// ==================== Tab 2: 展开图 ====================
+let unfolded=false;
+
+function getNetPositions(L,W,H,scale) {
+  let hL=L*scale/2, hW=W*scale/2, hH=H*scale/2;
+  return [
+    {x:0,y:0,w:L*scale,h:H*scale,ml:-L*scale/2,mt:-H*scale/2},
+    {x:(L+W)*scale,y:0,w:L*scale,h:H*scale,ml:-L*scale/2,mt:-H*scale/2},
+    {x:(L/2+W/2)*scale,y:-(H/2+W/2)*scale,w:L*scale,h:W*scale,ml:-L*scale/2,mt:-W*scale/2},
+    {x:(L/2+W/2)*scale,y:(H/2+W/2)*scale,w:L*scale,h:W*scale,ml:-L*scale/2,mt:-W*scale/2},
+    {x:-(L/2+W/2)*scale,y:0,w:W*scale,h:H*scale,ml:-W*scale/2,mt:-H*scale/2},
+    {x:(L/2+W/2)*scale,y:0,w:W*scale,h:H*scale,ml:-W*scale/2,mt:-H*scale/2},
+  ];
+}
+
+function updateNetView(expand) {
+  let L=parseFloat(netL.value),W=parseFloat(netW.value),H=parseFloat(netH.value);
+  valNetL.textContent=L;valNetW.textContent=W;valNetH.textContent=H;
+  let sc=28;
+  let flat=getNetPositions(L,W,H,sc);
+  let trans3d=buildFaceTransforms(L,W,H,sc);
+  let ufEls=[uf0,uf1,uf2,uf3,uf4,uf5];
+
+  for(let i=0;i<6;i++){
+    let el=ufEls[i];
+    el.textContent=FACE_LABELS[i];
+    if(expand){
+      let f=flat[i];
+      el.style.width=f.w+'px';el.style.height=f.h+'px';
+      el.style.marginLeft=f.ml+'px';el.style.marginTop=f.mt+'px';
+      el.style.transform=`translate3d(${f.x}px,${f.y}px,0)`;
+    }else{
+      let t=trans3d[i];
+      el.style.width=t.w+'px';el.style.height=t.h+'px';
+      el.style.marginLeft=t.ml+'px';el.style.marginTop=t.mt+'px';
+      el.style.transform=t.t;
+    }
+  }
+  unfolded=expand;
+}
+
+btnUnfold.addEventListener('click',()=>updateNetView(true));
+btnFold.addEventListener('click',()=>updateNetView(false));
+btnAutoUnfold.addEventListener('click',()=>{
+  updateNetView(false);
+  setTimeout(()=>updateNetView(true),200);
+  setTimeout(()=>updateNetView(false),2400);
+});
+netL.addEventListener('input',()=>updateNetView(unfolded));
+netW.addEventListener('input',()=>updateNetView(unfolded));
+netH.addEventListener('input',()=>updateNetView(unfolded));
+updateNetView(false);
+
+// ==================== Tab 3: 表面积 ====================
+let surfRX=-24, surfRY=30, surfDrag2=false, surfLastX2=0, surfLastY2=0, surfHL=-1;
+const surfFaces=[sf0,sf1,sf2,sf3,sf4,sf5];
+
+function updateSurfCuboid() {
+  let L=parseFloat(surfL.value),W=parseFloat(surfW.value),H=parseFloat(surfH.value);
+  valSurfL.textContent=L;valSurfW.textContent=W;valSurfH.textContent=H;
+  let trans=buildFaceTransforms(L,W,H,26);
+  applyFaces(surfFaces,trans,true);
+  surfWrapper.style.transform=`rotateX(${surfRX}deg) rotateY(${surfRY}deg)`;
+
+  let lw=L*W,lh=L*H,wh=W*H,total=2*(lw+lh+wh);
+
+  surfFaces.forEach((el,i)=>{
+    let hl=(surfHL===-1)?true:(
+      surfHL===0?(i===0||i===1):(surfHL===1?(i===4||i===5):(i===2||i===3))
+    );
+    el.style.opacity=hl?'0.8':'0.15';
+    el.style.borderColor=hl?'rgba(0,0,0,0.8)':'rgba(0,0,0,0.15)';
+  });
+
+  surfFormula.innerHTML=
+    'S = 2 × (长×宽 + 长×高 + 宽×高)<br>'+
+    '= 2 × ('+lw+' + '+lh+' + '+wh+')<br>'+
+    '= 2 × '+(lw+lh+wh)+' = <span class="big">'+total+' cm²</span>';
+}
+
+function setupSurfDrag() {
+  let scene=surfScene;
+  scene.addEventListener('mousedown',e=>{surfDrag2=true;surfLastX2=e.clientX;surfLastY2=e.clientY;e.preventDefault();});
+  window.addEventListener('mousemove',e=>{
+    if(!surfDrag2)return;
+    surfRY+=(e.clientX-surfLastX2)*0.5;
+    surfRX-=(e.clientY-surfLastY2)*0.5;
+    surfRX=Math.max(-60,Math.min(60,surfRX));
+    surfLastX2=e.clientX;surfLastY2=e.clientY;
+    surfWrapper.style.transform=`rotateX(${surfRX}deg) rotateY(${surfRY}deg)`;
+  });
+  window.addEventListener('mouseup',()=>{surfDrag2=false;});
+}
+
+surfL.addEventListener('input',updateSurfCuboid);
+surfW.addEventListener('input',updateSurfCuboid);
+surfH.addEventListener('input',updateSurfCuboid);
+hlFront.addEventListener('click',()=>{surfHL=0;updateSurfCuboid();});
+hlLR.addEventListener('click',()=>{surfHL=1;updateSurfCuboid();});
+hlTB.addEventListener('click',()=>{surfHL=2;updateSurfCuboid();});
+hlAll.addEventListener('click',()=>{surfHL=-1;updateSurfCuboid();});
+setupSurfDrag();
+updateSurfCuboid();
+
+// ==================== Tab 4: 体积 ====================
+let showCubes=true;
+function drawVolume() {
+  let c=cVolume,ctx=c.getContext('2d');
+  ctx.clearRect(0,0,780,360);
+  let L=parseInt(volL.value),W=parseInt(volW.value),H=parseInt(volH.value);
+  valVolL.textContent=L;valVolW.textContent=W;valVolH.textContent=H;
+  let V=L*W*H;
+
+  volFormula.innerHTML=
+    'V = 长 × 宽 × 高 = <span class="big">'+L+' × '+W+' × '+H+'</span> = <span class="big">'+V+' cm³</span>'+
+    (showCubes?'<br><span style="font-size:13px;color:#888">一共 '+V+' 个 1cm³ 的小正方体</span>':'');
+
+  let sc=32, ox=390-L*sc/2, oy=50;
+  for(let i=0;i<H;i++){
+    for(let j=0;j<W;j++){
+      for(let k=0;k<L;k++){
+        let px=ox+k*sc, py=oy+i*(sc*0.6)+j*(sc*0.4)+i*(sc*0.5);
+        ctx.fillStyle='rgba(91,106,191,0.85)';
+        ctx.fillRect(px,py,sc-2,sc*0.6-2);
+        ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1;
+        ctx.strokeRect(px,py,sc-2,sc*0.6-2);
+      }
+    }
+  }
+  ctx.fillStyle='#333';ctx.font='bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('每一层有 '+L+'×'+W+' = '+(L*W)+' 个，共 '+H+' 层',390,oy+H*(sc*0.6)+W*(sc*0.4)+H*(sc*0.5)+30);
+  if(!showCubes){
+    let cx=390,cy=200,rw=L*sc/2,rh=H*sc*0.6/2;
+    ctx.strokeStyle='rgba(91,106,191,0.3)';ctx.lineWidth=2;ctx.setLineDash([6,3]);
+    ctx.strokeRect(cx-rw,cy-rh,rw*2,rh*2);
+    ctx.setLineDash([]);
+    ctx.fillStyle='#888';ctx.fillText('体积 = '+L+'×'+W+'×'+H+' = '+V+' cm³',390,300);
+  }
+}
+
+volL.addEventListener('input',drawVolume);
+volW.addEventListener('input',drawVolume);
+volH.addEventListener('input',drawVolume);
+btnToggleCubes.addEventListener('click',()=>{
+  showCubes=!showCubes;
+  btnToggleCubes.textContent=showCubes?'隐藏单位立方体':'显示单位立方体';
+  drawVolume();
+});
+drawVolume();
+
+// ==================== Tab 5: 综合练习 ====================
+const QUIZ_DATA=[
+  {q:'一个长方体长8cm、宽5cm、高4cm，它的表面积是多少？',opts:['184 cm²','160 cm²','92 cm²','200 cm²'],ans:0,explain:'S=2×(8×5+8×4+5×4)=2×92=184 cm²'},
+  {q:'正方体棱长3cm，体积是多少？',opts:['9 cm³','27 cm³','54 cm³','18 cm³'],ans:1,explain:'V=3×3×3=27 cm³'},
+  {q:'长方体体积60cm³，底面积20cm²，高是多少？',opts:['2 cm','40 cm','3 cm','4 cm'],ans:2,explain:'V÷S底=60÷20=3 cm'},
+  {q:'正方体棱长扩大到原来的2倍，体积扩大到原来的几倍？',opts:['2倍','4倍','6倍','8倍'],ans:3,explain:'(2a)³=8a³，体积扩大8倍'},
+  {q:'棱长4cm的正方体，表面积是多少？',opts:['96 cm²','64 cm²','48 cm²','16 cm²'],ans:0,explain:'S=6×4×4=96 cm²'},
+  {q:'长6cm、宽4cm、高3cm的长方体，切成1cm³的小正方体，能切多少个？',opts:['24个','72个','48个','36个'],ans:1,explain:'V=6×4×3=72 cm³'},
+  {q:'正方体表面积54cm²，棱长是多少？',opts:['3 cm','6 cm','9 cm','4.5 cm'],ans:0,explain:'6a²=54，a²=9，a=3 cm'},
+  {q:'长方体通风管长120cm、宽高各10cm，至少需要铁皮多少？',opts:['4800 cm²','3600 cm²','5200 cm²','2400 cm²'],ans:0,explain:'两端开口，四个侧面=120×10×4=4800 cm²'},
+];
+let qzIdx=0,qzCorrect=0,qzLocked=false;
+
+function loadQuiz(idx){
+  if(idx>=QUIZ_DATA.length){showQZSummary();return;}
+  qzLocked=false;
+  qzFeedback.textContent='';qzFeedback.className='feedback';
+  btnNextQz.style.display='none';
+  qzProgress.textContent='第 '+(idx+1)+' / '+QUIZ_DATA.length+' 题';
+  let q=QUIZ_DATA[idx];
+  qzQuestion.textContent=(idx+1)+'. '+q.q;
+
+  let cc=cQuiz.getContext('2d');cc.clearRect(0,0,400,180);
+  qzOptions.innerHTML='';
+  q.opts.forEach((opt,i)=>{
+    let btn=document.createElement('div');btn.className='quiz-option';
+    btn.textContent=String.fromCharCode(65+i)+'. '+opt;
+    btn.addEventListener('click',()=>answerQZ(idx,i,btn));
+    qzOptions.appendChild(btn);
+  });
+}
+
+function answerQZ(idx,chosen,btn){
+  if(qzLocked)return;qzLocked=true;
+  let q=QUIZ_DATA[idx],all=document.querySelectorAll('#qzOptions .quiz-option');
+  if(chosen===q.ans){qzCorrect++;btn.classList.add('correct');qzFeedback.textContent='正确！'+q.explain;qzFeedback.className='feedback correct';}
+  else{btn.classList.add('wrong');all[q.ans].classList.add('correct');qzFeedback.textContent='错误。'+q.explain;qzFeedback.className='feedback wrong';}
+  all.forEach(o=>o.style.pointerEvents='none');
+  btnNextQz.style.display='inline-block';
+  btnNextQz.textContent=idx<QUIZ_DATA.length-1?'下一题':'查看成绩';
+  btnNextQz.onclick=()=>{qzIdx++;loadQuiz(qzIdx);};
+}
+
+function showQZSummary(){
+  qzArea.style.display='none';qzSummary.style.display='block';
+  let total=QUIZ_DATA.length;
+  let msg=qzCorrect===total?'太棒了！全部正确！':qzCorrect>=total*0.75?'很不错，继续加油！':qzCorrect>=total*0.5?'还需要多多练习哦！':'建议回到认识图形重新学习！';
+  qzSummary.innerHTML='<div class="score">'+qzCorrect+' / '+total+'</div><div class="msg">'+msg+'</div><button class="btn btn-accent" style="margin-top:14px" onclick="restartQuiz()">重新练习</button>';
+}
+function restartQuiz(){qzIdx=0;qzCorrect=0;qzLocked=false;qzArea.style.display='block';qzSummary.style.display='none';loadQuiz(0);}
+
+// ==================== Tab 切换 ====================
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    let sec=document.getElementById('sec-'+tab.dataset.id);
+    if(sec)sec.classList.add('active');
+    if(tab.dataset.id==='know')updateKnowCuboid();
+    if(tab.dataset.id==='net')updateNetView(unfolded);
+    if(tab.dataset.id==='surface')updateSurfCuboid();
+    if(tab.dataset.id==='volume')drawVolume();
+    if(tab.dataset.id==='practice'){qzIdx=0;qzCorrect=0;qzLocked=false;qzArea.style.display='block';qzSummary.style.display='none';loadQuiz(0);}
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长方体互动探索 - 五年级数学</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+  background:#1a1a2e;display:flex;justify-content:center;align-items:center;
+  min-height:100vh;padding:12px;user-select:none;
+}
+.app{
+  display:flex;gap:16px;max-width:1000px;width:100%;
+  background:#f5f6fa;border-radius:20px;overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,0.3);
+}
+.sidebar{
+  width:210px;background:#fff;padding:18px 14px;
+  display:flex;flex-direction:column;gap:12px;
+  border-right:1px solid #e8e8f0;
+}
+.sidebar h2{font-size:16px;color:#1a1a2e;text-align:center;margin-bottom:4px}
+.tool-group{display:flex;flex-direction:column;gap:6px}
+.tool-btn{
+  padding:10px 12px;border-radius:10px;border:2px solid #e0e0e8;
+  background:#f8f9fc;cursor:pointer;font-size:13px;font-weight:600;color:#555;
+  transition:all 0.2s;display:flex;align-items:center;gap:8px;text-align:left;
+}
+.tool-btn:hover{background:#eef0ff;border-color:#5b6abf}
+.tool-btn.active{background:#5b6abf;color:#fff;border-color:#5b6abf}
+.tool-btn .icon{font-size:18px;width:24px;text-align:center}
+.dim-group{margin-top:8px}
+.dim-group label{font-size:11px;color:#999;font-weight:600;display:block;margin-bottom:2px}
+.dim-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.dim-row .dim-label{font-size:12px;font-weight:700;color:#333;width:20px}
+.dim-row input[type=range]{flex:1;accent-color:#5b6abf;height:6px}
+.dim-row .dim-val{font-size:13px;font-weight:700;color:#5b6abf;min-width:22px;text-align:right}
+.quick-btns{display:flex;gap:4px;margin-top:6px}
+.quick-btn{
+  flex:1;padding:6px;border-radius:8px;border:1.5px solid #ddd;
+  background:#fff;cursor:pointer;font-size:11px;font-weight:600;color:#666;
+  transition:all 0.2s;
+}
+.quick-btn:hover{background:#5b6abf;color:#fff;border-color:#5b6abf}
+.info-panel{
+  background:#f0f3ff;border-radius:12px;padding:12px;margin-top:4px;
+  font-size:12px;color:#555;line-height:1.8;
+}
+.info-panel strong{color:#5b6abf}
+
+.main-view{
+  flex:1;display:flex;flex-direction:column;padding:20px;
+  position:relative;min-height:520px;
+}
+.main-view h1{text-align:center;font-size:20px;color:#1a1a2e;margin-bottom:4px}
+.cuboid-area{
+  flex:1;position:relative;display:flex;align-items:center;justify-content:center;
+  perspective:900px;
+}
+.cuboid-wrapper{
+  position:absolute;left:50%;top:50%;transform-style:preserve-3d;
+  transition:transform 0.08s ease-out;
+}
+.cuboid-face{
+  position:absolute;left:50%;top:50%;
+  border:2px solid rgba(0,0,0,0.5);box-sizing:border-box;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.3);
+  cursor:pointer;transition:opacity 0.3s,border-width 0.2s;
+}
+.cuboid-face:hover{border-width:3px;border-color:#fff!important;z-index:10}
+.cuboid-face.dimmed{opacity:0.15}
+
+.drag-handle{
+  position:absolute;width:20px;height:20px;border-radius:50%;
+  background:#fff;border:3px solid #e74c3c;cursor:grab;
+  transform:translate(-50%,-50%);z-index:100;pointer-events:auto;
+  box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:transform 0.15s;
+}
+.drag-handle:hover{transform:translate(-50%,-50%) scale(1.4);background:#e74c3c}
+.drag-handle:active{cursor:grabbing;transform:translate(-50%,-50%) scale(1.5)}
+.drag-handle.label-l{left:0;top:0}
+.drag-handle.label-w{left:0;top:0}
+.drag-handle.label-h{left:0;top:0}
+
+.handle-tooltip{
+  position:absolute;padding:3px 8px;border-radius:6px;
+  background:rgba(0,0,0,0.8);color:#fff;font-size:11px;font-weight:600;
+  pointer-events:none;white-space:nowrap;transform:translate(-50%,-140%);
+  opacity:0;transition:opacity 0.2s;
+}
+.drag-handle:hover .handle-tooltip{opacity:1}
+
+.feedback-toast{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  padding:12px 24px;border-radius:12px;font-size:18px;font-weight:800;
+  background:rgba(91,106,191,0.9);color:#fff;pointer-events:none;
+  opacity:0;transition:opacity 0.3s;z-index:200;
+}
+.feedback-toast.show{opacity:1}
+
+.mode-hint{
+  text-align:center;color:#888;font-size:12px;margin-top:4px;min-height:18px;
+}
+
+.bottom-bar{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.mode-btn{
+  padding:6px 16px;border-radius:16px;border:2px solid #ddd;
+  background:#fff;cursor:pointer;font-size:12px;font-weight:600;
+  color:#666;transition:all 0.2s;
+}
+.mode-btn.active{background:#5b6abf;color:#fff;border-color:#5b6abf}
+.mode-btn:hover:not(.active){border-color:#5b6abf;color:#5b6abf}
+
+.quiz-overlay{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:rgba(255,255,255,0.95);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:300;
+}
+.quiz-overlay h3{font-size:20px;color:#1a1a2e;margin-bottom:12px}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:360px}
+.quiz-opt{
+  padding:14px;border-radius:12px;cursor:pointer;background:#f5f5fa;
+  border:2px solid #e0e0e8;font-size:15px;font-weight:600;color:#444;
+  transition:all 0.2s;text-align:center;
+}
+.quiz-opt:hover{transform:translateY(-2px);box-shadow:0 3px 12px rgba(0,0,0,0.1)}
+.quiz-opt.correct{background:#d5f5e3;border-color:#27ae60;color:#1e7e34}
+.quiz-opt.wrong{background:#fadbd8;border-color:#e74c3c;color:#c0392b}
+.quiz-fb{margin-top:10px;font-size:15px;font-weight:600;min-height:22px;text-align:center}
+.quiz-fb.correct{color:#27ae60}
+.quiz-fb.wrong{color:#e74c3c}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <h2>长方体互动探索</h2>
+    <div class="tool-group">
+      <button class="tool-btn active" data-tool="rotate">
+        <span class="icon">↻</span> 旋转观察
+      </button>
+      <button class="tool-btn" data-tool="resize">
+        <span class="icon">↕</span> 拖拽变形
+      </button>
+      <button class="tool-btn" data-tool="paint">
+        <span class="icon">🖌</span> 涂色计算
+      </button>
+    </div>
+    <div class="dim-group">
+      <label>长方体尺寸</label>
+      <div class="dim-row"><span class="dim-label" style="color:#e74c3c">长</span><input type="range" id="sliderL" min="2" max="10" value="6" step="0.5"><span class="dim-val" id="dimValL">6</span></div>
+      <div class="dim-row"><span class="dim-label" style="color:#2ecc71">宽</span><input type="range" id="sliderW" min="2" max="10" value="4" step="0.5"><span class="dim-val" id="dimValW">4</span></div>
+      <div class="dim-row"><span class="dim-label" style="color:#3498db">高</span><input type="range" id="sliderH" min="2" max="8" value="3" step="0.5"><span class="dim-val" id="dimValH">3</span></div>
+    </div>
+    <div class="quick-btns">
+      <button class="quick-btn" data-preset="cube">正方体</button>
+      <button class="quick-btn" data-preset="flat">扁平</button>
+      <button class="quick-btn" data-preset="tall">细长</button>
+    </div>
+    <div class="info-panel" id="infoPanel">
+      <strong>表面积 S</strong> = 108 cm²<br>
+      <strong>体积 V</strong> = 72 cm³<br>
+      顶点 8 · 棱 12 · 面 6
+    </div>
+  </div>
+
+  <div class="main-view" id="mainView">
+    <h1>长方体和正方体</h1>
+    <div class="cuboid-area" id="cuboidArea">
+      <div class="cuboid-wrapper" id="wrapper">
+        <div class="cuboid-face" id="f0" style="background:rgba(91,106,191,0.85)">前</div>
+        <div class="cuboid-face" id="f1" style="background:rgba(74,82,144,0.85)">后</div>
+        <div class="cuboid-face" id="f2" style="background:rgba(39,174,96,0.85)">上</div>
+        <div class="cuboid-face" id="f3" style="background:rgba(30,132,73,0.85)">下</div>
+        <div class="cuboid-face" id="f4" style="background:rgba(230,126,34,0.85)">左</div>
+        <div class="cuboid-face" id="f5" style="background:rgba(211,84,0,0.85)">右</div>
+      </div>
+
+      <div class="drag-handle label-l" id="hL" style="display:none">
+        <span class="handle-tooltip">拖拽改长度</span>
+      </div>
+      <div class="drag-handle label-w" id="hW" style="display:none">
+        <span class="handle-tooltip">拖拽改宽度</span>
+      </div>
+      <div class="drag-handle label-h" id="hH" style="display:none">
+        <span class="handle-tooltip">拖拽改高度</span>
+      </div>
+
+      <div class="feedback-toast" id="toast"></div>
+
+      <div class="quiz-overlay" id="quizOverlay" style="display:none">
+        <h3 id="qzTitle">综合练习</h3>
+        <p style="color:#888;margin-bottom:12px" id="qzProgress">第 1 / 6 题</p>
+        <div class="quiz-options" id="qzOpts"></div>
+        <div class="quiz-fb" id="qzFb"></div>
+        <button class="mode-btn" id="qzNext" style="display:none;margin-top:12px">下一题</button>
+      </div>
+    </div>
+
+    <div class="mode-hint" id="modeHint">拖动鼠标旋转长方体</div>
+    <div class="bottom-bar">
+      <button class="mode-btn" data-mode="normal">标准视图</button>
+      <button class="mode-btn" data-mode="explode">爆炸展开</button>
+      <button class="mode-btn" data-mode="fillcube">体积填充</button>
+      <button class="mode-btn" id="btnQuiz">综合练习</button>
+      <button class="mode-btn" id="btnAutoRotate">自动旋转: 关</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== State ====================
+let L=6,W=4,H=3;
+let rx=-22,ry=32;
+let curTool='rotate';
+let curMode='normal';
+let explodeAmt=0;
+let autoRotate=false;
+let dragData=null;
+let paintData=null;
+
+const SCALE=28;
+const FACES=[f0,f1,f2,f3,f4,f5];
+const FACE_COLORS=[
+  'rgba(91,106,191,0.85)','rgba(74,82,144,0.85)',
+  'rgba(39,174,96,0.85)','rgba(30,132,73,0.85)',
+  'rgba(230,126,34,0.85)','rgba(211,84,0,0.85)'
+];
+const FACE_LABELS=['前','后','上','下','左','右'];
+
+// ==================== 3D Projection ====================
+function project3D(x,y,z,rxa,rya){
+  let cosY=Math.cos(rya),sinY=Math.sin(rya);
+  let x1=x*cosY+z*sinY,z1=-x*sinY+z*cosY;
+  let cosX=Math.cos(rxa),sinX=Math.sin(rxa);
+  let y1=y*cosX-z1*sinX,z2=y*sinX+z1*cosX;
+  let s=800/(800+z2);
+  return{x:x1*s,y:-y1*s,dz:z2};
+}
+
+// ==================== CSS 3D Cuboid ====================
+function buildTransforms(l,w,h,explode){
+  let hL=l*SCALE/2,hW=w*SCALE/2,hH=h*SCALE/2;
+  let e=explode||0;
+  return[
+    {w:l*SCALE,h:h*SCALE,ml:-l*SCALE/2,mt:-h*SCALE/2,t:`translate3d(0,0,${hW+e}px)`},
+    {w:l*SCALE,h:h*SCALE,ml:-l*SCALE/2,mt:-h*SCALE/2,t:`translate3d(0,0,${-hW-e}px) rotateY(180deg)`},
+    {w:l*SCALE,h:w*SCALE,ml:-l*SCALE/2,mt:-w*SCALE/2,t:`translate3d(0,${-hH-e}px,0) rotateX(90deg)`},
+    {w:l*SCALE,h:w*SCALE,ml:-l*SCALE/2,mt:-w*SCALE/2,t:`translate3d(0,${hH+e}px,0) rotateX(-90deg)`},
+    {w:w*SCALE,h:h*SCALE,ml:-w*SCALE/2,mt:-h*SCALE/2,t:`translate3d(${-hL-e}px,0,0) rotateY(-90deg)`},
+    {w:w*SCALE,h:h*SCALE,ml:-w*SCALE/2,mt:-h*SCALE/2,t:`translate3d(${hL+e}px,0,0) rotateY(90deg)`}
+  ];
+}
+
+function updateCuboid(){
+  let trans=buildTransforms(L,W,H,explodeAmt);
+  for(let i=0;i<6;i++){
+    let t=trans[i],el=FACES[i];
+    el.style.width=t.w+'px';el.style.height=t.h+'px';
+    el.style.marginLeft=t.ml+'px';el.style.marginTop=t.mt+'px';
+    el.style.transform=t.t;
+    el.style.opacity='1';
+    el.style.background=FACE_COLORS[i];
+    el.textContent=FACE_LABELS[i];
+  }
+  if(paintData){
+    paintData.faces.forEach(i=>{
+      let el=FACES[i];
+      el.style.background='rgba(231,76,60,0.9)';
+      el.textContent='已涂';
+    });
+    let unpi=paintData.faces.length===0;
+    let allpi=paintData.faces.length===6;
+    FACES.forEach((el,i)=>{
+      if(paintData.faces.includes(i))return;
+      el.classList.toggle('dimmed',!unpi&&!allpi);
+    });
+  }else{
+    FACES.forEach(el=>el.classList.remove('dimmed'));
+  }
+  wrapper.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;
+  updateHandles();
+  updateInfo();
+}
+
+function updateInfo(){
+  let lw=L*W,lh=L*H,wh=W*H;
+  let S=2*(lw+lh+wh);
+  let V=L*W*H;
+  infoPanel.innerHTML=
+    '<strong>表面积 S</strong> = 2×('+lw+'+'+lh+'+'+wh+') = '+S+' cm²<br>'+
+    '<strong>体积 V</strong> = '+L+'×'+W+'×'+H+' = '+V+' cm³<br>'+
+    '顶点 8 · 棱 12 · 面 6 · 相对面 '+(L===W&&W===H?1:(L===W||W===H||L===H?2:3))+'对相等';
+}
+
+// ==================== Handles ====================
+function updateHandles(){
+  let area=cuboidArea;
+  let areaRect=area.getBoundingClientRect();
+  let cx=areaRect.width/2,cy=areaRect.height/2;
+  let hL_3d=project3D(L/2+1,0,0,rx*Math.PI/180,ry*Math.PI/180);
+  let hW_3d=project3D(0,0,W/2+1,rx*Math.PI/180,ry*Math.PI/180);
+  let hH_3d=project3D(0,-H/2-1,0,rx*Math.PI/180,ry*Math.PI/180);
+
+  hL.style.left=(cx+hL_3d.x*SCALE)+'px';
+  hL.style.top=(cy+hL_3d.y*SCALE)+'px';
+  hW.style.left=(cx+hW_3d.x*SCALE)+'px';
+  hW.style.top=(cy+hW_3d.y*SCALE)+'px';
+  hH.style.left=(cx+hH_3d.x*SCALE)+'px';
+  hH.style.top=(cy+hH_3d.y*SCALE)+'px';
+
+  let vis=curTool==='resize'?'block':'none';
+  hL.style.display=vis;hW.style.display=vis;hH.style.display=vis;
+}
+
+// ==================== Drag: Rotate ====================
+let isDragging=false,lastX=0,lastY=0;
+cuboidArea.addEventListener('mousedown',e=>{
+  if(curTool==='resize')return;
+  if(e.target.closest('.drag-handle'))return;
+  isDragging=true;lastX=e.clientX;lastY=e.clientY;
+  e.preventDefault();
+});
+window.addEventListener('mousemove',e=>{
+  if(curTool==='resize'){
+    if(dragData){
+      let dx=e.clientX-dragData.sx,dy=e.clientY-dragData.sy;
+      let change=0;
+      if(dragData.dim==='L')change=Math.round(dx/SCALE);
+      else if(dragData.dim==='W')change=Math.round(dx/SCALE);
+      else if(dragData.dim==='H')change=Math.round(-dy/SCALE);
+      if(change!==0){
+        let newVal=Math.max(1.5,Math.min(dragData.dim==='H'?8:10,dragData.startVal+change*0.5));
+        if(dragData.dim==='L'){L=newVal;sliderL.value=L;}
+        else if(dragData.dim==='W'){W=newVal;sliderW.value=W;}
+        else{H=newVal;sliderH.value=H;}
+        updateSliders();updateCuboid();
+      }
+    }
+    return;
+  }
+  if(!isDragging)return;
+  ry+=(e.clientX-lastX)*0.4;
+  rx-=(e.clientY-lastY)*0.4;
+  rx=Math.max(-70,Math.min(70,rx));
+  lastX=e.clientX;lastY=e.clientY;
+  wrapper.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;
+  updateHandles();
+});
+window.addEventListener('mouseup',()=>{isDragging=false;dragData=null;});
+
+// Handle drag
+function setupHandleDrag(handle,dim){
+  handle.addEventListener('mousedown',e=>{
+    e.stopPropagation();e.preventDefault();
+    dragData={
+      dim:dim,
+      sx:e.clientX,sy:e.clientY,
+      startVal:dim==='L'?L:dim==='W'?W:H
+    };
+  });
+}
+setupHandleDrag(hL,'L');
+setupHandleDrag(hW,'W');
+setupHandleDrag(hH,'H');
+
+// ==================== Sliders ====================
+function updateSliders(){
+  dimValL.textContent=L;sliderL.value=L;
+  dimValW.textContent=W;sliderW.value=W;
+  dimValH.textContent=H;sliderH.value=H;
+}
+sliderL.addEventListener('input',()=>{L=parseFloat(sliderL.value);dimValL.textContent=L;updateCuboid();});
+sliderW.addEventListener('input',()=>{W=parseFloat(sliderW.value);dimValW.textContent=W;updateCuboid();});
+sliderH.addEventListener('input',()=>{H=parseFloat(sliderH.value);dimValH.textContent=H;updateCuboid();});
+
+// ==================== Tools ====================
+document.querySelectorAll('.tool-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    curTool=btn.dataset.tool;
+    if(curTool==='resize'){
+      modeHint.textContent='拖动红色圆点改变长/宽/高';
+    }else if(curTool==='paint'){
+      modeHint.textContent='点击面来涂色，计算涂色面积';
+      if(!paintData)paintData={faces:[]};
+      updateCuboid();
+    }else{
+      modeHint.textContent='拖动鼠标旋转长方体';
+      paintData=null;updateCuboid();
+    }
+    updateHandles();
+  });
+});
+
+// Face click for paint mode
+FACES.forEach((face,i)=>{
+  face.addEventListener('click',e=>{
+    if(curTool!=='paint')return;
+    e.stopPropagation();
+    if(!paintData)paintData={faces:[]};
+    let idx=paintData.faces.indexOf(i);
+    if(idx>=0)paintData.faces.splice(idx,1);
+    else paintData.faces.push(i);
+    updateCuboid();
+    showToast(paintData.faces.length+' 个面已涂色');
+  });
+});
+
+// ==================== Modes ====================
+document.querySelectorAll('.mode-btn[data-mode]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    curMode=btn.dataset.mode;
+    if(curMode==='normal'){explodeAmt=0;updateCuboid();}
+    else if(curMode==='explode'){
+      document.querySelectorAll('.mode-btn[data-mode="normal"]').forEach(b=>b.classList.add('active'));
+      animateExplode();
+    }else if(curMode==='fillcube'){
+      document.querySelectorAll('.mode-btn[data-mode="normal"]').forEach(b=>b.classList.add('active'));
+      animateFillCubes();
+    }
+  });
+});
+
+function animateExplode(){
+  let dur=800,start=performance.now();
+  function step(t){
+    let p=Math.min(1,(t-start)/dur);
+    p=p<0.5?2*p*p:(1-Math.pow(-2*p+2,2)/2);
+    explodeAmt=80*p;
+    updateCuboid();
+    if(p<1)requestAnimationFrame(step);
+    else{setTimeout(()=>{
+      let backDur=600,backStart=performance.now();
+      function back(t2){
+        let p2=Math.min(1,(t2-backStart)/backDur);
+        explodeAmt=80*(1-p2);updateCuboid();
+        if(p2<1)requestAnimationFrame(back);
+        else{explodeAmt=0;updateCuboid();}
+      }
+      requestAnimationFrame(back);
+    },1200);}
+  }
+  requestAnimationFrame(step);
+}
+
+function animateFillCubes(){
+  let V=Math.floor(L*W*H);
+  let area=cuboidArea;
+  let areaRect=area.getBoundingClientRect();
+  let cx=areaRect.width/2,cy=areaRect.height/2;
+
+  let duration=2000,startTime=performance.now();
+  let cubeEls=[];
+
+  function step(t){
+    let elapsed=t-startTime;
+    let count=Math.min(V,Math.floor(V*elapsed/duration));
+    let progress=elapsed/duration;
+
+    while(cubeEls.length<count){
+      let idx=cubeEls.length;
+      let z=Math.floor(idx/(L*W));
+      let y=Math.floor((idx%(L*W))/L);
+      let x=idx%L;
+      let x3d=-L/2+x+0.5,y3d=-H/2+z+0.5,z3d=-W/2+y+0.5;
+      let p=project3D(x3d,y3d,z3d,rx*Math.PI/180,ry*Math.PI/180);
+      let el=document.createElement('div');
+      el.style.cssText=`position:absolute;width:6px;height:6px;background:#e74c3c;border-radius:1px;left:${cx+p.x*SCALE}px;top:${cy+p.y*SCALE}px;transform:translate(-50%,-50%);pointer-events:none;opacity:0.8;`;
+      area.appendChild(el);cubeEls.push(el);
+    }
+
+    cubeEls.forEach(e=>{e.style.opacity='1';});
+
+    if(count<V)requestAnimationFrame(step);
+    else{
+      showToast('共 '+V+' 个 1cm³ 小正方体');
+      setTimeout(()=>{
+        cubeEls.forEach(e=>e.remove());
+      },2000);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// ==================== Auto Rotate ====================
+btnAutoRotate.addEventListener('click',()=>{
+  autoRotate=!autoRotate;
+  btnAutoRotate.textContent='自动旋转: '+(autoRotate?'开':'关');
+  if(autoRotate)startAutoRotate();
+});
+function startAutoRotate(){
+  function rot(){
+    if(!autoRotate)return;
+    ry+=0.6;rx+=0.1;
+    if(rx>60)rx=60;if(rx<-60)rx=-60;
+    wrapper.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;
+    updateHandles();
+    requestAnimationFrame(rot);
+  }
+  requestAnimationFrame(rot);
+}
+
+// ==================== Quick Presets ====================
+document.querySelectorAll('.quick-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    let p=btn.dataset.preset;
+    if(p==='cube'){L=4;W=4;H=4;}
+    else if(p==='flat'){L=8;W=6;H=2;}
+    else if(p==='tall'){L=3;W=3;H=7;}
+    updateSliders();updateCuboid();
+  });
+});
+
+// ==================== Quiz ====================
+const QUIZ=[
+  {q:'长方体长8cm、宽5cm、高4cm，表面积是多少？',o:['184 cm²','160 cm²','92 cm²','200 cm²'],a:0},
+  {q:'正方体棱长3cm，体积是多少？',o:['9 cm³','27 cm³','54 cm³','18 cm³'],a:1},
+  {q:'一个面的面积是15cm²，长方体有几个这样的面？',o:['1个','2个','3个','6个'],a:1,explain:'相对的面面积相等，共2个'},
+  {q:'正方体棱长扩大2倍，体积扩大几倍？',o:['2倍','4倍','6倍','8倍'],a:3},
+  {q:'棱长4cm的正方体，表面积是多少？',o:['96 cm²','64 cm²','48 cm²','16 cm²'],a:0},
+  {q:'一个长方体体积60cm³，底面积20cm²，高是多少？',o:['2 cm','40 cm','3 cm','4 cm'],a:2},
+];
+let qzI=0,qzC=0,qzL=false;
+
+function showQuiz(){
+  qzI=0;qzC=0;qzL=false;
+  quizOverlay.style.display='flex';
+  loadQuizQ();
+}
+function loadQuizQ(){
+  if(qzI>=QUIZ.length){
+    quizOverlay.innerHTML='<h3>练习完成！</h3><p style="font-size:42px;font-weight:800;color:#5b6abf">'+qzC+'/'+QUIZ.length+'</p><p style="color:#888">'+(qzC===QUIZ.length?'满分！太棒了！':qzC>=4?'不错，继续加油！':'多练习一下哦！')+'</p><button class="mode-btn" onclick="hideQuiz()">关闭</button>';
+    return;
+  }
+  qzL=false;qzFb.textContent='';qzFb.className='quiz-fb';qzNext.style.display='none';
+  qzProgress.textContent='第 '+(qzI+1)+' / '+QUIZ.length+' 题';
+  qzTitle.textContent=(qzI+1)+'. '+QUIZ[qzI].q;
+  qzOpts.innerHTML='';
+  QUIZ[qzI].o.forEach((opt,i)=>{
+    let d=document.createElement('div');d.className='quiz-opt';
+    d.textContent=String.fromCharCode(65+i)+'. '+opt;
+    d.addEventListener('click',()=>answerQZ(i,d));
+    qzOpts.appendChild(d);
+  });
+}
+function answerQZ(chosen,el){
+  if(qzL)return;qzL=true;
+  let q=QUIZ[qzI],all=qzOpts.querySelectorAll('.quiz-opt');
+  if(chosen===q.a){qzC++;el.classList.add('correct');qzFb.textContent='正确！'+(q.explain||'');qzFb.className='quiz-fb correct';}
+  else{el.classList.add('wrong');all[q.a].classList.add('correct');qzFb.textContent='错误。'+(q.explain||'');qzFb.className='quiz-fb wrong';}
+  all.forEach(o=>o.style.pointerEvents='none');
+  qzNext.style.display='inline-block';
+  qzNext.onclick=()=>{qzI++;loadQuizQ();};
+}
+function hideQuiz(){quizOverlay.style.display='none';}
+btnQuiz.addEventListener('click',showQuiz);
+
+// ==================== Toast ====================
+function showToast(msg){
+  toast.textContent=msg;toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'),1200);
+}
+
+// ==================== Init ====================
+updateSliders();updateCuboid();
+</script>
+</body>
+</html>

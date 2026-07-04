@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三角形的面积 - 五年级数学</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  background: linear-gradient(135deg, #e8f4f8 0%, #f0e6f6 50%, #fff3e0 100%);
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh; padding: 20px;
+}
+.container {
+  background: #fff; border-radius: 24px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+  max-width: 820px; width: 100%; padding: 32px 36px;
+}
+h1 {
+  text-align: center; color: #2c3e50; font-size: 28px;
+  margin-bottom: 6px; letter-spacing: 2px;
+}
+.subtitle {
+  text-align: center; color: #888; font-size: 14px; margin-bottom: 20px;
+}
+.tabs {
+  display: flex; gap: 6px; margin-bottom: 24px; justify-content: center;
+}
+.tab {
+  padding: 10px 24px; border-radius: 20px; cursor: pointer;
+  background: #f0f0f5; color: #666; font-size: 15px;
+  border: 2px solid transparent; transition: all 0.3s;
+  user-select: none;
+}
+.tab.active {
+  background: #4a90d9; color: #fff; border-color: #4a90d9;
+  box-shadow: 0 4px 12px rgba(74,144,217,0.3);
+}
+.tab:hover:not(.active) {
+  background: #e0e0ea; border-color: #b0b0c0;
+}
+.content { min-height: 420px; position: relative; }
+.section { display: none; }
+.section.active { display: block; }
+canvas { display: block; margin: 0 auto; border-radius: 12px; }
+
+.controls {
+  display: flex; gap: 16px; margin-top: 20px; justify-content: center;
+  flex-wrap: wrap; align-items: center;
+}
+.btn {
+  padding: 10px 22px; border-radius: 24px; border: none;
+  cursor: pointer; font-size: 15px; font-weight: 600;
+  transition: all 0.25s; user-select: none;
+}
+.btn-primary {
+  background: #4a90d9; color: #fff;
+  box-shadow: 0 4px 12px rgba(74,144,217,0.35);
+}
+.btn-primary:hover { background: #3a7bc8; transform: translateY(-1px); }
+.btn-secondary {
+  background: #f5f5fa; color: #555; border: 2px solid #ddd;
+}
+.btn-secondary:hover { background: #eaeaef; }
+.btn-success {
+  background: #27ae60; color: #fff;
+  box-shadow: 0 4px 12px rgba(39,174,96,0.3);
+}
+.btn-success:hover { background: #219a52; }
+.btn-warn {
+  background: #f39c12; color: #fff;
+}
+.btn-warn:hover { background: #e08e0b; }
+
+.slider-group { display: flex; align-items: center; gap: 10px; }
+.slider-group label { font-size: 14px; color: #555; white-space: nowrap; }
+.slider-group input[type="range"] { width: 130px; accent-color: #4a90d9; }
+.slider-group .val { font-size: 15px; font-weight: 700; color: #2c3e50; min-width: 36px; text-align: center; background: #f0f4ff; border-radius: 8px; padding: 2px 8px; }
+
+.feedback {
+  text-align: center; margin-top: 16px; font-size: 16px;
+  min-height: 28px; font-weight: 600;
+}
+.feedback.correct { color: #27ae60; }
+.feedback.wrong { color: #e74c3c; }
+
+.formula-box {
+  background: linear-gradient(135deg, #fff9e6, #fff3cc);
+  border: 2px solid #f0d060; border-radius: 16px;
+  padding: 16px 24px; text-align: center; margin: 16px 0 0;
+  font-size: 20px; color: #8b6914; letter-spacing: 1px;
+}
+.formula-box .big { font-size: 28px; font-weight: 800; color: #c0392b; }
+
+.quiz-area { text-align: center; }
+.quiz-question { font-size: 18px; color: #2c3e50; margin-bottom: 20px; line-height: 1.8; }
+.quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 440px; margin: 0 auto; }
+.quiz-option {
+  padding: 16px; border-radius: 14px; cursor: pointer;
+  background: #f5f5fa; border: 2px solid #e0e0e8;
+  font-size: 16px; font-weight: 600; color: #444;
+  transition: all 0.2s;
+}
+.quiz-option:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.quiz-option.correct-answer { background: #d4efdf; border-color: #27ae60; color: #1e7e34; }
+.quiz-option.wrong-answer { background: #fadbd8; border-color: #e74c3c; color: #c0392b; }
+
+.progress { text-align: center; font-size: 14px; color: #999; margin-bottom: 8px; }
+
+.summary { text-align: center; padding: 40px 0; }
+.summary .score { font-size: 56px; font-weight: 800; color: #4a90d9; }
+.summary .msg { font-size: 20px; color: #555; margin-top: 12px; }
+
+.step-indicator {
+  display: flex; justify-content: center; gap: 24px; margin-bottom: 20px;
+}
+.step-dot {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; background: #e0e0ea; color: #999;
+  transition: all 0.4s; position: relative;
+}
+.step-dot::after {
+  content: ''; position: absolute; left: 48px; top: 50%;
+  width: 16px; height: 3px; background: #d0d0da; transform: translateY(-50%);
+}
+.step-dot:last-child::after { display: none; }
+.step-dot.done { background: #4a90d9; color: #fff; }
+.step-dot.active { background: #27ae60; color: #fff; transform: scale(1.15); }
+.step-text { font-size: 11px; color: #999; text-align: center; margin-top: 4px; }
+.step-wrap { text-align: center; }
+
+.tips {
+  background: #eaf2fd; border-radius: 12px; padding: 12px 18px;
+  font-size: 14px; color: #4a90d9; margin-bottom: 16px; line-height: 1.7;
+}
+.tips strong { color: #c0392b; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>三角形的面积</h1>
+  <p class="subtitle">人教版五年级上册 · 第六单元</p>
+
+  <div class="tabs">
+    <div class="tab active" data-section="explore">探究发现</div>
+    <div class="tab" data-section="formula">公式推导</div>
+    <div class="tab" data-section="practice">随堂练习</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ========== Section 1: 探究发现 ========== -->
+    <div id="explore" class="section active">
+      <div class="step-indicator">
+        <div class="step-wrap"><div class="step-dot done" id="sd1">1</div><div class="step-text">观察平行四边形</div></div>
+        <div class="step-wrap"><div class="step-dot" id="sd2">2</div><div class="step-text">沿对角线剪开</div></div>
+        <div class="step-wrap"><div class="step-dot" id="sd3">3</div><div class="step-text">两个三角形重合</div></div>
+        <div class="step-wrap"><div class="step-dot" id="sd4">4</div><div class="step-text">发现面积关系</div></div>
+      </div>
+      <div class="tips" id="exploreTips">点击下方按钮，一步步观察三角形面积是怎么来的</div>
+      <canvas id="exploreCanvas" width="720" height="320"></canvas>
+      <div class="controls">
+        <button class="btn btn-primary" id="btnNextStep" style="display:none;">下一步</button>
+        <button class="btn btn-secondary" id="btnResetExpl">重新演示</button>
+      </div>
+    </div>
+
+    <!-- ========== Section 2: 公式推导 ========== -->
+    <div id="formula" class="section">
+      <div class="tips">
+        拖动滑块改变三角形的<strong>底</strong>和<strong>高</strong>，观察面积如何变化
+      </div>
+      <canvas id="formulaCanvas" width="720" height="340"></canvas>
+      <div class="controls">
+        <div class="slider-group">
+          <label>底 (cm):</label>
+          <input type="range" id="baseSlider" min="3" max="12" value="8" step="0.5">
+          <span class="val" id="baseVal">8</span>
+        </div>
+        <div class="slider-group">
+          <label>高 (cm):</label>
+          <input type="range" id="heightSlider" min="2" max="10" value="5" step="0.5">
+          <span class="val" id="heightVal">5</span>
+        </div>
+      </div>
+      <div class="formula-box" id="formulaBox">
+        三角形面积 = <span class="big">8 × 5 ÷ 2</span> = <span class="big">20 cm²</span>
+      </div>
+    </div>
+
+    <!-- ========== Section 3: 随堂练习 ========== -->
+    <div id="practice" class="section">
+      <div class="quiz-area" id="quizArea">
+        <div class="progress" id="quizProgress"></div>
+        <div class="quiz-question" id="quizQuestion"></div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div class="feedback" id="quizFeedback"></div>
+        <button class="btn btn-primary" id="btnNextQuiz" style="display:none;margin-top:16px;">下一题</button>
+      </div>
+      <div class="summary" id="quizSummary" style="display:none;"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ==================== Tab切换 ====================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.section).classList.add('active');
+    if (tab.dataset.section === 'formula') drawFormula();
+    if (tab.dataset.section === 'practice') generateQuiz();
+  });
+});
+
+// ==================== Section 1: 探究发现 ====================
+const expCanvas = document.getElementById('exploreCanvas');
+const expCtx = expCanvas.getContext('2d');
+let exploreStep = 0;
+let animProgress = 0;
+let animId = null;
+
+const baseValExp = 8;
+const heightValExp = 5;
+const gridSize = 40;
+const originX = 130, originY = 240;
+const scaleX = 42, scaleY = 36;
+
+function getParallelogramPts(offsetX = 0) {
+  const x0 = originX + offsetX;
+  const y0 = originY;
+  return [
+    { x: x0, y: y0 },
+    { x: x0 + baseValExp * scaleX, y: y0 },
+    { x: x0 + baseValExp * scaleX + scaleX * 1.6, y: y0 - heightValExp * scaleY },
+    { x: x0 + scaleX * 1.6, y: y0 - heightValExp * scaleY }
+  ];
+}
+
+function getTriPts(offsetX) {
+  const pts = getParallelogramPts(offsetX);
+  return { a: pts[0], b: pts[3], c: pts[1] };
+}
+
+function drawGrid(ctx, w, h) {
+  ctx.strokeStyle = '#e8e8f0';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+}
+
+function drawParallelogram(ctx, pts, color, alpha = 0.3) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawTriangle(ctx, a, b, c, color, alpha = 0.35) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawLabel(ctx, x, y, text, color = '#2c3e50', size = 16) {
+  ctx.fillStyle = color;
+  ctx.font = `bold ${size}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(text, x, y);
+}
+
+function drawDimension(ctx, x1, y1, x2, y2, label, offset = 0) {
+  ctx.strokeStyle = '#e74c3c';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  const midX = (x1 + x2) / 2;
+  ctx.beginPath();
+  if (Math.abs(y1 - y2) < 2) {
+    ctx.moveTo(x1, y1 + offset); ctx.lineTo(x2, y2 + offset);
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, midX, y1 + offset - 6);
+  } else {
+    ctx.moveTo(x1 + offset, y1); ctx.lineTo(x2 + offset, y2);
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, x1 + offset + 6, (y1 + y2) / 2 + 4);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawExplore(step, progress) {
+  const ctx = expCtx;
+  const w = expCanvas.width, h = expCanvas.height;
+  ctx.clearRect(0, 0, w, h);
+  drawGrid(ctx, w, h);
+
+  const paraPts = getParallelogramPts(0);
+  const tri = getTriPts(0);
+
+  if (step === 0) {
+    drawExploreStep0(ctx, paraPts, tri);
+    document.getElementById('btnNextStep').style.display = 'inline-block';
+    document.getElementById('btnNextStep').textContent = '下一步：沿对角线剪开';
+    document.getElementById('exploreTips').innerHTML = '这是一个<strong>平行四边形</strong>，底为8cm，高为5cm。点击下一步看发生了什么。';
+  } else if (step === 1) {
+    document.getElementById('btnNextStep').style.display = 'inline-block';
+    document.getElementById('btnNextStep').textContent = '下一步：拼合对比';
+    document.getElementById('exploreTips').innerHTML = '用剪刀沿<strong>对角线</strong>把平行四边形剪开，得到<strong>两个三角形</strong>。';
+    drawExploreStep1(ctx, paraPts, tri, progress);
+    if (progress < 1 && animId === null) {
+      animateExplore(step);
+    }
+  } else if (step === 2) {
+    document.getElementById('btnNextStep').style.display = 'inline-block';
+    document.getElementById('btnNextStep').textContent = '下一步：发现面积关系';
+    document.getElementById('exploreTips').innerHTML = '把两个三角形重叠——<strong>完全重合</strong>！说明两个三角形<strong>完全相同</strong>。';
+    drawExploreStep2(ctx, tri, progress);
+    if (progress < 1 && animId === null) {
+      animateExplore(step);
+    }
+  } else if (step === 3) {
+    document.getElementById('btnNextStep').style.display = 'none';
+    document.getElementById('exploreTips').innerHTML = '<strong>结论：</strong>每个三角形的面积 = 平行四边形面积 ÷ 2 = 底 × 高 ÷ 2';
+    drawExploreStep3(ctx, paraPts, tri);
+    highlightStepDots(4);
+  }
+  updateStepDots(step + 1);
+}
+
+function drawExploreStep0(ctx, paraPts, tri) {
+  drawParallelogram(ctx, paraPts, '#4a90d9', 0.35);
+  drawLabel(ctx, paraPts[0].x + baseValExp * scaleX / 2, paraPts[0].y - 10, '底 = 8 cm', '#e74c3c', 14);
+  drawDimension(ctx, paraPts[0].x, paraPts[0].y + 16, paraPts[1].x, paraPts[1].y + 16, '底 (8cm)', 16);
+  const leftX = paraPts[0].x;
+  drawDimension(ctx, leftX - 16, paraPts[3].y, leftX - 16, paraPts[0].y, '高 (5cm)', -16);
+  drawLabel(ctx, leftX + baseValExp * scaleX / 2, paraPts[3].y - 40, '平行四边形', '#2c3e50', 16);
+  drawLabel(ctx, leftX + baseValExp * scaleX / 2, paraPts[0].y + 40, '面积 = 底 × 高 = 8 × 5 = 40 cm²', '#27ae60', 15);
+}
+
+function drawExploreStep1(ctx, paraPts, tri, p) {
+  drawParallelogram(ctx, paraPts, '#4a90d9', 0.1);
+  drawTriangle(ctx, tri.a, tri.c, tri.b, '#e74c3c', 0.35);
+  drawTriangle(ctx, tri.a, tri.b, tri.c, '#27ae60', 0.35);
+
+  const cutStartX = tri.a.x + (tri.c.x - tri.a.x) * p;
+  const cutStartY = tri.a.y + (tri.c.y - tri.a.y) * p;
+  const cutEndX = tri.b.x + (tri.c.x - tri.b.x) * p;
+  const cutEndY = tri.b.y + (tri.c.y - tri.b.y) * p;
+
+  const midX = (tri.a.x + tri.c.x) / 2;
+  const midY = (tri.a.y + tri.c.y) / 2;
+  drawLabel(ctx, midX - 40, midY - 10, '对角线', '#f39c12', 13);
+
+  const rightMidX = (tri.c.x + tri.b.x) / 2;
+  const rightMidY = (tri.c.y + tri.b.y) / 2;
+
+  const offset = 8;
+  drawTriangle(ctx,
+    { x: tri.a.x - offset * p, y: tri.a.y + offset * p },
+    { x: tri.b.x - offset * p, y: tri.b.y + offset * p },
+    { x: tri.c.x, y: tri.c.y },
+    '#e74c3c', 0.35
+  );
+  drawTriangle(ctx,
+    { x: tri.a.x + offset * p, y: tri.a.y - offset * p },
+    { x: tri.a.x, y: tri.a.y },
+    { x: tri.b.x + offset * p, y: tri.b.y - offset * p },
+    '#27ae60', 0.35
+  );
+
+  drawLabel(ctx, paraPts[0].x + baseValExp * scaleX * 0.3, paraPts[0].y - 60, '三角形1', '#e74c3c', 15);
+  drawLabel(ctx, paraPts[0].x + baseValExp * scaleX * 0.7, paraPts[3].y - 80, '三角形2', '#27ae60', 15);
+}
+
+function drawExploreStep2(ctx, tri, p) {
+  const overlapX = tri.c.x * p;
+  const overlapY = tri.c.y * p - tri.c.y * (1 - p);
+
+  drawTriangle(ctx,
+    { x: tri.a.x - overlapX, y: tri.a.y - overlapY },
+    { x: tri.b.x - overlapX, y: tri.b.y - overlapY },
+    { x: tri.c.x - overlapX, y: tri.c.y - overlapY },
+    '#e74c3c', 0.4
+  );
+  drawTriangle(ctx, tri.a, tri.b, tri.c, '#27ae60', 0.4);
+
+  if (p > 0.7) {
+    drawLabel(ctx, tri.a.x + (tri.c.x - tri.a.x) / 2, tri.a.y + (tri.c.y - tri.a.y) / 2 - 8, '完全重合!', '#e74c3c', 18);
+  }
+}
+
+function drawExploreStep3(ctx, paraPts, tri) {
+  drawParallelogram(ctx, paraPts, '#4a90d9', 0.15);
+  drawTriangle(ctx, tri.a, tri.b, tri.c, '#e74c3c', 0.4);
+  drawTriangle(ctx, tri.a, tri.c, tri.b, '#27ae60', 0.25);
+
+  drawLabel(ctx, paraPts[0].x + baseValExp * scaleX / 2, paraPts[0].y + 50, '(红色) 三角形面积 = 平行四边形面积 ÷ 2', '#e74c3c', 14);
+  drawLabel(ctx, paraPts[0].x + baseValExp * scaleX / 2, paraPts[0].y + 72, '= 底 × 高 ÷ 2 = 8 × 5 ÷ 2 = 20 cm²', '#c0392b', 15);
+
+  paraPts.forEach((pt, i) => {
+    const pta = paraPts[(i + 1) % 4];
+    const mx = (pt.x + pta.x) / 2, my = (pt.y + pta.y) / 2;
+    ctx.fillStyle = '#4a90d9';
+    ctx.beginPath(); ctx.arc(mx, my, 4, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+function updateStepDots(step) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('sd' + i);
+    el.classList.remove('done', 'active');
+    if (i < step) el.classList.add('done');
+    if (i === step) el.classList.add('active');
+  }
+}
+
+function highlightStepDots(step) {
+  for (let i = 1; i <= step; i++) {
+    document.getElementById('sd' + i).classList.add('done');
+    document.getElementById('sd' + i).classList.remove('active');
+  }
+}
+
+function animateExplore(targetStep) {
+  animProgress = 0;
+  function step() {
+    animProgress += 0.016;
+    if (animProgress >= 1) {
+      animProgress = 1;
+      animId = null;
+    }
+    drawExplore(targetStep, animProgress);
+    if (animId !== null) animId = requestAnimationFrame(step);
+  }
+  animId = requestAnimationFrame(step);
+}
+
+function resetExplore() {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  animProgress = 0;
+  exploreStep = 0;
+  drawExplore(0, 0);
+  document.getElementById('btnNextStep').style.display = 'inline-block';
+  document.getElementById('btnNextStep').textContent = '下一步：沿对角线剪开';
+  document.getElementById('exploreTips').innerHTML = '这是一个<strong>平行四边形</strong>，底为8cm，高为5cm。点击下一步看发生了什么。';
+  updateStepDots(1);
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('sd' + i);
+    el.classList.remove('done', 'active');
+  }
+  document.getElementById('sd1').classList.add('active');
+}
+
+document.getElementById('btnNextStep').addEventListener('click', () => {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  animProgress = 0;
+  exploreStep++;
+  if (exploreStep > 3) exploreStep = 3;
+  animProgress = 0;
+  if (exploreStep === 1 || exploreStep === 2) {
+    drawExplore(exploreStep, 0);
+    animateExplore(exploreStep);
+  } else {
+    drawExplore(exploreStep, 0);
+  }
+  if (exploreStep >= 3) {
+    document.getElementById('btnNextStep').style.display = 'none';
+  }
+});
+
+document.getElementById('btnResetExpl').addEventListener('click', resetExplore);
+
+drawExplore(0, 0);
+document.getElementById('sd1').classList.add('active');
+document.getElementById('btnNextStep').style.display = 'inline-block';
+document.getElementById('btnNextStep').textContent = '下一步：沿对角线剪开';
+
+// ==================== Section 2: 公式推导 ====================
+const formulaCanvas = document.getElementById('formulaCanvas');
+const formulaCtx = formulaCanvas.getContext('2d');
+const baseSlider = document.getElementById('baseSlider');
+const heightSlider = document.getElementById('heightSlider');
+const baseValSpan = document.getElementById('baseVal');
+const heightValSpan = document.getElementById('heightVal');
+
+function drawFormula() {
+  const ctx = formulaCtx;
+  const w = formulaCanvas.width, h = formulaCanvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const base = parseFloat(baseSlider.value);
+  const height = parseFloat(heightSlider.value);
+  baseValSpan.textContent = base;
+  heightValSpan.textContent = height;
+
+  const area = (base * height / 2).toFixed(1);
+  document.getElementById('formulaBox').innerHTML =
+    '三角形面积 = <span class="big">' + base + ' × ' + height + ' ÷ 2</span> = <span class="big">' + area + ' cm²</span>';
+
+  const sclX = 44, sclY = 40;
+  const ox = 160, oy = 290;
+
+  const pts = [
+    { x: ox, y: oy },
+    { x: ox + base * sclX, y: oy },
+    { x: ox + base * sclX + sclX * 1.6, y: oy - height * sclY },
+    { x: ox + sclX * 1.6, y: oy - height * sclY }
+  ];
+
+  drawGrid(ctx, w, h);
+
+  drawParallelogram(ctx, pts, '#b0c4de', 0.15);
+
+  const tri1a = pts[0];
+  const tri1b = pts[1];
+  const tri1c = pts[3];
+  const tri2a = pts[1];
+  const tri2b = pts[3];
+  const tri2c = pts[2];
+
+  drawTriangle(ctx, tri1a, tri1b, tri1c, '#3498db', 0.35);
+  drawTriangle(ctx, tri2a, tri2c, tri2b, '#27ae60', 0.35);
+
+  drawLabel(ctx, ox - 70, oy - height * sclY / 2, '高 = ' + height + ' cm', '#e74c3c', 14);
+  drawDimension(ctx, ox - 20, oy, ox - 20, oy - height * sclY, '高', -20);
+
+  drawLabel(ctx, ox + base * sclX / 2, oy + 28, '底 = ' + base + ' cm', '#e74c3c', 14);
+  drawDimension(ctx, ox, oy + 18, ox + base * sclX, oy + 18, '底', 18);
+
+  const triMidX = (tri1a.x + tri1b.x + tri1c.x) / 3;
+  const triMidY = (tri1a.y + tri1b.y + tri1c.y) / 3;
+  drawLabel(ctx, triMidX - 20, triMidY - 6, 'S ÷ 2', '#3498db', 18);
+  const tri2MidX = (tri2a.x + tri2b.x + tri2c.x) / 3;
+  const tri2MidY = (tri2a.y + tri2b.y + tri2c.y) / 3;
+  drawLabel(ctx, tri2MidX + 30, tri2MidY - 6, 'S ÷ 2', '#27ae60', 18);
+
+  drawLabel(ctx, ox + base * sclX / 2 + 25, oy - height * sclY / 2 + 10, '平行四边形', '#888', 13);
+  drawLabel(ctx, ox + base * sclX / 2 + 25, oy - height * sclY / 2 + 30, '面积 S = 底 × 高', '#888', 12);
+}
+
+baseSlider.addEventListener('input', drawFormula);
+heightSlider.addEventListener('input', drawFormula);
+
+// ==================== Section 3: 随堂练习 ====================
+const quizData = [
+  { q: '三角形的底是 6cm，高是 4cm，它的面积是多少？', opts: ['12 cm²', '24 cm²', '10 cm²', '48 cm²'], ans: 0, explain: 'S = 底 × 高 ÷ 2 = 6 × 4 ÷ 2 = 12 cm²' },
+  { q: '一个三角形的面积是 30 cm²，底是 10 cm，高是多少？', opts: ['3 cm', '6 cm', '5 cm', '15 cm'], ans: 1, explain: '高 = 面积 × 2 ÷ 底 = 30 × 2 ÷ 10 = 6 cm' },
+  { q: '底和高都是 8cm 的三角形，面积是？', opts: ['64 cm²', '16 cm²', '32 cm²', '24 cm²'], ans: 2, explain: 'S = 8 × 8 ÷ 2 = 32 cm²' },
+  { q: '下面哪个说法是正确的？', opts: ['三角形面积=底×高', '三角形面积=底×高÷2', '三角形面积=(底+高)÷2', '三角形面积=底×高×2'], ans: 1, explain: '三角形面积 = 底 × 高 ÷ 2，因为两个完全相同的三角形可以拼成一个平行四边形。' },
+  { q: '一块三角形花坛，底长 12 米，高 5 米，面积是多少？', opts: ['60 m²', '30 m²', '17 m²', '120 m²'], ans: 1, explain: 'S = 12 × 5 ÷ 2 = 30 m²' },
+];
+let currentQuizIdx = 0;
+let correctCount = 0;
+let quizLocked = false;
+
+function generateQuiz() {
+  currentQuizIdx = 0;
+  correctCount = 0;
+  quizLocked = false;
+  document.getElementById('quizSummary').style.display = 'none';
+  document.getElementById('quizArea').style.display = 'block';
+  loadQuiz(0);
+}
+
+function loadQuiz(idx) {
+  if (idx >= quizData.length) {
+    showSummary();
+    return;
+  }
+  quizLocked = false;
+  document.getElementById('quizFeedback').textContent = '';
+  document.getElementById('quizFeedback').className = 'feedback';
+  document.getElementById('btnNextQuiz').style.display = 'none';
+  document.getElementById('quizProgress').textContent = '第 ' + (idx + 1) + ' / ' + quizData.length + ' 题';
+
+  const q = quizData[idx];
+  document.getElementById('quizQuestion').textContent = (idx + 1) + '. ' + q.q;
+  const optsDiv = document.getElementById('quizOptions');
+  optsDiv.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'quiz-option';
+    btn.textContent = String.fromCharCode(65 + i) + '. ' + opt;
+    btn.addEventListener('click', () => answerQuiz(idx, i, btn));
+    optsDiv.appendChild(btn);
+  });
+}
+
+function answerQuiz(idx, chosen, btn) {
+  if (quizLocked) return;
+  quizLocked = true;
+  const q = quizData[idx];
+  const allOpts = document.querySelectorAll('.quiz-option');
+
+  if (chosen === q.ans) {
+    correctCount++;
+    btn.classList.add('correct-answer');
+    document.getElementById('quizFeedback').textContent = '回答正确！' + q.explain;
+    document.getElementById('quizFeedback').className = 'feedback correct';
+  } else {
+    btn.classList.add('wrong-answer');
+    allOpts[q.ans].classList.add('correct-answer');
+    document.getElementById('quizFeedback').textContent = '回答错误。' + q.explain;
+    document.getElementById('quizFeedback').className = 'feedback wrong';
+  }
+
+  allOpts.forEach(o => o.style.pointerEvents = 'none');
+
+  if (idx < quizData.length - 1) {
+    document.getElementById('btnNextQuiz').style.display = 'inline-block';
+    document.getElementById('btnNextQuiz').textContent = '下一题';
+    document.getElementById('btnNextQuiz').onclick = () => { loadQuiz(idx + 1); };
+  } else {
+    document.getElementById('btnNextQuiz').style.display = 'inline-block';
+    document.getElementById('btnNextQuiz').textContent = '查看成绩';
+    document.getElementById('btnNextQuiz').onclick = showSummary;
+  }
+}
+
+function showSummary() {
+  document.getElementById('quizArea').style.display = 'none';
+  const summary = document.getElementById('quizSummary');
+  summary.style.display = 'block';
+  const score = correctCount;
+  const total = quizData.length;
+  let msg = '';
+  if (score === total) msg = '太棒了！你已经完全掌握了三角形的面积！';
+  else if (score >= total * 0.8) msg = '很不错！再巩固一下就更好了!';
+  else if (score >= total * 0.6) msg = '还需要加油哦，回顾一下公式推导吧！';
+  else msg = '建议回到"探究发现"重新学习一遍呢！';
+
+  summary.innerHTML = '<div class="score">' + score + ' / ' + total + '</div><div class="msg">' + msg + '</div><button class="btn btn-warn" style="margin-top:20px;" onclick="generateQuiz()">重新练习</button>';
+}
+
+document.getElementById('btnNextQuiz').addEventListener('click', () => {
+  if (!quizLocked) return;
+  const handler = document.getElementById('btnNextQuiz').onclick;
+  if (handler) handler();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分数的加减法 - 五年级数学</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+  background:linear-gradient(135deg,#e3f2fd,#f3e5f5,#fff3e0);
+  display:flex;justify-content:center;align-items:flex-start;
+  min-height:100vh;padding:14px;
+}
+.container{
+  background:#fff;border-radius:20px;
+  box-shadow:0 4px 30px rgba(0,0,0,0.08);
+  max-width:860px;width:100%;padding:24px 30px;
+}
+h1{text-align:center;color:#1a1a2e;font-size:25px;letter-spacing:1px}
+.subtitle{text-align:center;color:#999;font-size:13px;margin-bottom:16px}
+.tabs{display:flex;gap:4px;margin-bottom:18px;justify-content:center;flex-wrap:wrap}
+.tab{
+  padding:8px 16px;border-radius:20px;cursor:pointer;
+  background:#f0f0f7;color:#666;font-size:13px;font-weight:600;
+  border:2px solid transparent;transition:all 0.3s;user-select:none
+}
+.tab.active{background:#6c5ce7;color:#fff;border-color:#6c5ce7;box-shadow:0 3px 10px rgba(108,92,231,0.3)}
+.tab:hover:not(.active){background:#e0e0ec}
+.section{display:none}
+.section.active{display:block}
+canvas{display:block;margin:0 auto;border-radius:12px;background:#fafbfe}
+.control-row{display:flex;gap:12px;margin-top:12px;justify-content:center;align-items:center;flex-wrap:wrap}
+.btn{
+  padding:9px 20px;border-radius:22px;border:none;cursor:pointer;
+  font-size:14px;font-weight:600;transition:all 0.25s;user-select:none
+}
+.btn-primary{background:#6c5ce7;color:#fff;box-shadow:0 3px 10px rgba(108,92,231,0.3)}
+.btn-primary:hover{background:#5a4bd1;transform:translateY(-1px)}
+.btn-secondary{background:#f5f5fa;color:#555;border:2px solid #ddd}
+.btn-secondary:hover{background:#eaeaef}
+.btn-accent{background:#e17055;color:#fff}
+.btn-accent:hover{background:#d35400}
+
+.slider-row{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.slider-group{display:flex;align-items:center;gap:6px}
+.slider-group label{font-size:13px;color:#555;font-weight:600;white-space:nowrap}
+.slider-group input[type=range]{width:90px;accent-color:#6c5ce7}
+.slider-group .val{font-size:15px;font-weight:700;color:#6c5ce7;min-width:24px;text-align:center;background:#f3e5f5;border-radius:6px;padding:2px 8px}
+
+.formula-box{
+  background:linear-gradient(135deg,#ede7f6,#f3e5f5);
+  border:2px solid #b39ddb;border-radius:14px;
+  padding:14px 20px;text-align:center;margin-top:14px;
+  font-size:16px;color:#4527a0;line-height:2
+}
+.formula-box .big{font-size:22px;font-weight:800;color:#e91e63}
+
+.fraction-cards{display:flex;gap:20px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.fraction-card{
+  background:#f8f9fc;border-radius:14px;padding:16px 20px;
+  text-align:center;border:2px solid #e0e0e8;min-width:100px;
+  transition:all 0.3s;
+}
+.fraction-card.highlight{border-color:#6c5ce7;background:#ede7f6;box-shadow:0 0 0 3px rgba(108,92,231,0.15)}
+.fraction-card .frac-num{font-size:36px;font-weight:800;color:#2c3e50;line-height:1.2}
+.fraction-card .frac-line{border-top:2px solid #2c3e50;width:40px;margin:2px auto}
+.fraction-card .frac-den{font-size:20px;font-weight:700;color:#2c3e50}
+.fraction-card .card-label{font-size:11px;color:#999;margin-top:4px}
+
+.quiz-area{text-align:center;min-height:320px}
+.quiz-progress{font-size:13px;color:#999;margin-bottom:8px}
+.quiz-question{font-size:17px;color:#2c3e50;margin-bottom:16px;line-height:1.8}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:440px;margin:0 auto}
+.quiz-option{
+  padding:14px;border-radius:12px;cursor:pointer;background:#f5f5fa;
+  border:2px solid #e0e0e8;font-size:15px;font-weight:600;color:#444;
+  transition:all 0.2s
+}
+.quiz-option:hover{transform:translateY(-2px);box-shadow:0 3px 12px rgba(0,0,0,0.06)}
+.quiz-option.correct{background:#d5f5e3;border-color:#27ae60;color:#1e7e34}
+.quiz-option.wrong{background:#fadbd8;border-color:#e74c3c;color:#c0392b}
+.feedback{margin-top:14px;font-size:15px;font-weight:600;min-height:24px}
+.feedback.correct{color:#27ae60}
+.feedback.wrong{color:#e74c3c}
+.summary{text-align:center;padding:30px 0}
+.summary .score{font-size:52px;font-weight:800;color:#6c5ce7}
+.summary .msg{font-size:18px;color:#555;margin-top:10px}
+.step-indicator{display:flex;justify-content:center;gap:12px;margin-bottom:14px}
+.step-dot{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;background:#e0e0ea;color:#999;transition:all 0.3s
+}
+.step-dot.done{background:#6c5ce7;color:#fff}
+.step-dot.active{background:#e17055;color:#fff;transform:scale(1.12)}
+.hint-text{text-align:center;color:#888;font-size:13px;margin-top:8px}
+.toggle-row{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:8px;flex-wrap:wrap}
+.toggle-label{display:flex;align-items:center;gap:5px;font-size:13px;color:#555;cursor:pointer}
+.toggle-label input{accent-color:#6c5ce7}
+.op-select{display:flex;gap:6px;justify-content:center;align-items:center}
+.op-btn{
+  width:44px;height:44px;border-radius:50%;border:3px solid #ddd;cursor:pointer;
+  font-size:22px;font-weight:800;background:#fff;color:#666;transition:all 0.2s;display:flex;align-items:center;justify-content:center
+}
+.op-btn.active{background:#6c5ce7;color:#fff;border-color:#6c5ce7}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>分数的加减法</h1>
+<p class="subtitle">人教版五年级下册 · 第六单元</p>
+
+<div class="tabs">
+  <div class="tab active" data-id="sense">分数的意义</div>
+  <div class="tab" data-id="common">通分(找公分母)</div>
+  <div class="tab" data-id="like">同分母加减</div>
+  <div class="tab" data-id="unlike">异分母加减</div>
+  <div class="tab" data-id="practice">综合练习</div>
+</div>
+
+<!-- ============================ Tab 1: 分数的意义 ============================ -->
+<div class="section active" id="sec-sense">
+  <canvas id="cSense" width="780" height="280"></canvas>
+  <div class="slider-row">
+    <div class="slider-group"><label>分子:</label><input type="range" id="senseNum" min="0" max="12" value="3"><span class="val" id="valSenseNum">3</span></div>
+    <div class="slider-group"><label>分母:</label><input type="range" id="senseDen" min="1" max="12" value="8"><span class="val" id="valSenseDen">8</span></div>
+  </div>
+  <div class="toggle-row">
+    <label class="toggle-label"><input type="checkbox" id="showEquivalent"> 显示等值分数</label>
+    <label class="toggle-label"><input type="checkbox" id="showDecimal"> 显示小数</label>
+  </div>
+</div>
+
+<!-- ============================ Tab 2: 通分 ============================ -->
+<div class="section" id="sec-common">
+  <canvas id="cCommon" width="780" height="340"></canvas>
+  <div class="slider-row">
+    <div class="slider-group"><label>分数1 分子:</label><input type="range" id="cNum1" min="1" max="8" value="2"><span class="val" id="valCNum1">2</span></div>
+    <div class="slider-group"><label>分母1:</label><input type="range" id="cDen1" min="2" max="12" value="3"><span class="val" id="valCDen1">3</span></div>
+    <div class="slider-group"><label>分数2 分子:</label><input type="range" id="cNum2" min="1" max="8" value="1"><span class="val" id="valCNum2">1</span></div>
+    <div class="slider-group"><label>分母2:</label><input type="range" id="cDen2" min="2" max="12" value="4"><span class="val" id="valCDen2">4</span></div>
+  </div>
+  <button class="btn btn-primary" id="btnFindLCM" style="display:block;margin:12px auto 0">找最小公分母</button>
+  <div class="formula-box" id="commonFormula" style="display:none"></div>
+</div>
+
+<!-- ============================ Tab 3: 同分母加减 ============================ -->
+<div class="section" id="sec-like">
+  <canvas id="cLike" width="780" height="300"></canvas>
+  <div class="slider-row">
+    <div class="slider-group"><label>分数1 分子:</label><input type="range" id="lNum1" min="0" max="10" value="3"><span class="val" id="valLNum1">3</span></div>
+    <div class="slider-group"><label>分母:</label><input type="range" id="lDen" min="2" max="12" value="8"><span class="val" id="valLDen">8</span></div>
+    <div class="slider-group"><label>分数2 分子:</label><input type="range" id="lNum2" min="0" max="10" value="2"><span class="val" id="valLNum2">2</span></div>
+  </div>
+  <div class="control-row">
+    <div class="op-select">
+      <button class="op-btn active" data-op="add">+</button>
+      <button class="op-btn" data-op="sub">-</button>
+    </div>
+    <button class="btn btn-accent" id="btnAutoLike">自动演示加法</button>
+  </div>
+</div>
+
+<!-- ============================ Tab 4: 异分母加减 ============================ -->
+<div class="section" id="sec-unlike">
+  <div class="step-indicator" id="unlikeSteps">
+    <div class="step-dot active" id="us1">1</div>
+    <div class="step-dot" id="us2">2</div>
+    <div class="step-dot" id="us3">3</div>
+    <div class="step-dot" id="us4">4</div>
+  </div>
+  <p class="hint-text" id="unlikeHint">第1步：观察两个分数的分母不同，不能直接相加</p>
+  <canvas id="cUnlike" width="780" height="290"></canvas>
+  <div class="slider-row">
+    <div class="slider-group"><label>分数1 分子:</label><input type="range" id="uNum1" min="1" max="6" value="1"><span class="val" id="valUNum1">1</span></div>
+    <div class="slider-group"><label>分母1:</label><input type="range" id="uDen1" min="2" max="12" value="3"><span class="val" id="valUDen1">3</span></div>
+    <div class="slider-group"><label>分数2 分子:</label><input type="range" id="uNum2" min="1" max="6" value="1"><span class="val" id="valUNum2">1</span></div>
+    <div class="slider-group"><label>分母2:</label><input type="range" id="uDen2" min="2" max="12" value="4"><span class="val" id="valUDen2">4</span></div>
+  </div>
+  <div class="control-row">
+    <div class="op-select">
+      <button class="op-btn active" data-op="uadd">+</button>
+      <button class="op-btn" data-op="usub">-</button>
+    </div>
+    <button class="btn btn-primary" id="btnUnlikeNext">下一步：通分</button>
+    <button class="btn btn-secondary" id="btnUnlikeReset">重新开始</button>
+  </div>
+  <div class="formula-box" id="unlikeFormula">
+    1/3 + 1/4 = ? (分母不同，需要先通分)
+  </div>
+</div>
+
+<!-- ============================ Tab 5: 综合练习 ============================ -->
+<div class="section" id="sec-practice">
+  <div class="quiz-area" id="qzArea">
+    <div class="quiz-progress" id="qzProgress"></div>
+    <div class="quiz-question" id="qzQuestion"></div>
+    <canvas id="cQuiz" width="600" height="160" style="margin-bottom:10px"></canvas>
+    <div class="quiz-options" id="qzOptions"></div>
+    <div class="feedback" id="qzFeedback"></div>
+    <button class="btn btn-primary" id="btnNextQz" style="display:none;margin-top:10px">下一题</button>
+  </div>
+  <div class="summary" id="qzSummary" style="display:none"></div>
+</div>
+
+</div>
+
+<script>
+// ==================== 工具函数 ====================
+function gcd(a,b){return b===0?a:gcd(b,a%b)}
+function lcm(a,b){return a*b/gcd(a,b)}
+function simplify(n,d){let g=gcd(n,d);return[n/g,d/g]}
+
+function drawFractionBar(ctx,x,y,w,h,num,den,color,labelTop='',labelBot='') {
+  ctx.save();
+  if(labelTop){
+    ctx.fillStyle='#333';ctx.font='bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';ctx.fillText(labelTop,x+w/2,y-8);
+  }
+  ctx.strokeStyle='#333';ctx.lineWidth=2;
+  ctx.strokeRect(x,y,w,h);
+  let segW=w/den;
+  for(let i=0;i<num;i++){
+    ctx.fillStyle=color;
+    ctx.fillRect(x+i*segW+1,y+1,segW-2,h-2);
+  }
+  for(let i=1;i<den;i++){
+    ctx.beginPath();ctx.moveTo(x+i*segW,y);ctx.lineTo(x+i*segW,y+h);
+    ctx.strokeStyle='rgba(0,0,0,0.15)';ctx.lineWidth=1;ctx.stroke();
+  }
+  if(labelBot){
+    let [sn,sd]=simplify(num,den);
+    let text=(sn===num&&sd===den)?`${num}/${den}`:`${num}/${den} = ${sn}/${sd}`;
+    ctx.fillStyle='#333';ctx.font='bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';
+    if(sn>sd)text+=` = ${Math.floor(sn/sd)}${sn%sd>0?`又${sn%sd}/${sd}`:''}`;
+    ctx.fillText(text,x+w/2,y+h+20);
+  }
+  ctx.restore();
+}
+
+function drawPieSlice(ctx,cx,cy,r,num,den,color,startAngle=0) {
+  ctx.save();
+  let sliceAngle=(Math.PI*2)/den;
+  for(let i=0;i<num;i++){
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,startAngle+i*sliceAngle,startAngle+(i+1)*sliceAngle);
+    ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  }
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle='#333';ctx.lineWidth=2;ctx.stroke();
+  for(let i=1;i<den;i++){
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+r*Math.cos(startAngle+i*sliceAngle),cy+r*Math.sin(startAngle+i*sliceAngle));
+    ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=1.5;ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function clearCanvas(c,w,h){let ctx=c.getContext('2d');ctx.clearRect(0,0,w,h)}
+
+// ==================== Tab 1: 分数的意义 ====================
+function drawSense() {
+  let c=document.getElementById('cSense');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,780,280);
+  let num=parseInt(document.getElementById('senseNum').value);
+  let den=parseInt(document.getElementById('senseDen').value);
+  document.getElementById('valSenseNum').textContent=num;
+  document.getElementById('valSenseDen').textContent=den;
+  let showEq=document.getElementById('showEquivalent').checked;
+  let showDec=document.getElementById('showDecimal').checked;
+
+  drawPieSlice(ctx,150,150,90,num,den,'#6c5ce7',-Math.PI/2);
+  let [sn,sd]=simplify(num,den);
+  let text=`${num}/${den}`;
+  if(sn!==num||sd!==den)text+=` = ${sn}/${sd}`;
+  if(sn>sd)text+=` = ${Math.floor(sn/sd)}${sn%sd>0?`又${sn%sd}/${sd}`:''}`;
+  ctx.fillStyle='#2c3e50';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';ctx.fillText(text,150,265);
+
+  drawFractionBar(ctx,320,80,420,50,num,den,'#e17055','','');
+  if(showEq&&den>1&&num>0)drawFractionBar(ctx,320,160,420,50,sn,sd,'#00b894','','');
+  if(showDec&&num>0){
+    ctx.fillStyle='#888';ctx.font='14px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('= '+(num/den).toFixed(4),530,150);
+  }
+}
+
+document.getElementById('senseNum').addEventListener('input',drawSense);
+document.getElementById('senseDen').addEventListener('input',drawSense);
+document.getElementById('showEquivalent').addEventListener('change',drawSense);
+document.getElementById('showDecimal').addEventListener('change',drawSense);
+drawSense();
+
+// ==================== Tab 2: 通分 ====================
+function drawCommon() {
+  let c=document.getElementById('cCommon');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,780,340);
+  let n1=parseInt(document.getElementById('cNum1').value);
+  let d1=parseInt(document.getElementById('cDen1').value);
+  let n2=parseInt(document.getElementById('cNum2').value);
+  let d2=parseInt(document.getElementById('cDen2').value);
+  document.getElementById('valCNum1').textContent=n1;
+  document.getElementById('valCDen1').textContent=d1;
+  document.getElementById('valCNum2').textContent=n2;
+  document.getElementById('valCDen2').textContent=d2;
+
+  let L=lcm(d1,d2);
+
+  drawFractionBar(ctx,40,60,320,55,n1,d1,'#6c5ce7',`${n1}/${d1}`,`每份 = 1/${d1}`);
+  drawFractionBar(ctx,420,60,320,55,n2,d2,'#e17055',`${n2}/${d2}`,`每份 = 1/${d2}`);
+
+  let newN1=n1*(L/d1), newN2=n2*(L/d2);
+  drawFractionBar(ctx,40,190,320,55,newN1,L,'#6c5ce7',`通分后: ${newN1}/${L}`,`每份 = 1/${L}`);
+  drawFractionBar(ctx,420,190,320,55,newN2,L,'#e17055',`通分后: ${newN2}/${L}`,`每份 = 1/${L}`);
+
+  ctx.fillStyle='#888';ctx.font='14px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(`最小公分母 LCM(${d1},${d2}) = ${L}`,390,300);
+  ctx.fillText(`通分规则: 分子分母同时乘以 (公分母÷原分母)`,390,320);
+}
+
+function showLCMResult() {
+  let n1=parseInt(document.getElementById('cNum1').value);
+  let d1=parseInt(document.getElementById('cDen1').value);
+  let n2=parseInt(document.getElementById('cNum2').value);
+  let d2=parseInt(document.getElementById('cDen2').value);
+  let L=lcm(d1,d2);
+  let newN1=n1*(L/d1), newN2=n2*(L/d2);
+  let fb=document.getElementById('commonFormula');
+  fb.style.display='block';
+  fb.innerHTML='<span style="color:#6c5ce7">'+n1+'/'+d1+'</span> = <span style="color:#6c5ce7">'+n1+'×'+(L/d1)+' / '+d1+'×'+(L/d1)+' = <span class="big">'+newN1+'/'+L+'</span></span><br>'+
+  '<span style="color:#e17055">'+n2+'/'+d2+'</span> = <span style="color:#e17055">'+n2+'×'+(L/d2)+' / '+d2+'×'+(L/d2)+' = <span class="big">'+newN2+'/'+L+'</span></span><br>'+
+  '最小公分母是 <span class="big">'+L+'</span>';
+}
+
+document.getElementById('cNum1').addEventListener('input',drawCommon);
+document.getElementById('cDen1').addEventListener('input',drawCommon);
+document.getElementById('cNum2').addEventListener('input',drawCommon);
+document.getElementById('cDen2').addEventListener('input',drawCommon);
+document.getElementById('btnFindLCM').addEventListener('click',showLCMResult);
+drawCommon();
+
+// ==================== Tab 3: 同分母加减 ====================
+let likeOp='add';
+
+function drawLike() {
+  let c=document.getElementById('cLike');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,780,300);
+  let n1=parseInt(document.getElementById('lNum1').value);
+  let d=parseInt(document.getElementById('lDen').value);
+  let n2=parseInt(document.getElementById('lNum2').value);
+  document.getElementById('valLNum1').textContent=n1;
+  document.getElementById('valLDen').textContent=d;
+  document.getElementById('valLNum2').textContent=n2;
+
+  let resultN=likeOp==='add'?n1+n2:Math.max(0,n1-n2);
+  let [sn,sd]=simplify(resultN,d);
+
+  drawFractionBar(ctx,40,60,700,40,n1,d,'#6c5ce7',`${n1}/${d}`);
+  ctx.fillStyle='#333';ctx.font='bold 24px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';ctx.fillText(likeOp==='add'?'+':'-',390,130);
+
+  if(likeOp==='sub'&&n1<n2){
+    ctx.fillStyle='#e74c3c';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';ctx.fillText('被减数不能小于减数！请调整分子。',390,180);
+  }else{
+    drawFractionBar(ctx,40,150,700,40,n2,d,'#e17055',`${n2}/${d}`);
+    drawFractionBar(ctx,40,240,700,40,resultN,d,'#00b894',`结果: ${resultN}/${d}`+
+      (resultN!==sn||d!==sd?` = ${sn}/${sd}`:'')+
+      (sn>sd?` = ${Math.floor(sn/sd)}${sn%sd>0?`又${sn%sd}/${sd}`:''}`:''));
+  }
+}
+
+document.getElementById('lNum1').addEventListener('input',drawLike);
+document.getElementById('lDen').addEventListener('input',drawLike);
+document.getElementById('lNum2').addEventListener('input',drawLike);
+document.querySelectorAll('#sec-like .op-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#sec-like .op-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    likeOp=b.dataset.op;drawLike();
+  });
+});
+document.getElementById('btnAutoLike').addEventListener('click',()=>{
+  likeOp='add';
+  document.querySelectorAll('#sec-like .op-btn').forEach(x=>x.classList.remove('active'));
+  document.querySelector('#sec-like .op-btn[data-op="add"]').classList.add('active');
+  document.getElementById('lNum1').value=3;document.getElementById('lDen').value=8;document.getElementById('lNum2').value=2;
+  document.getElementById('valLNum1').textContent=3;document.getElementById('valLDen').textContent=8;document.getElementById('valLNum2').textContent=2;
+  drawLike();
+});
+drawLike();
+
+// ==================== Tab 4: 异分母加减 ====================
+let unlikeStep=0, unlikeOp='uadd';
+
+function gcf(a,b){return b===0?a:gcf(b,a%b)}
+function LCM(a,b){return a*b/gcf(a,b)}
+
+function drawUnlikeStep0() {
+  let c=document.getElementById('cUnlike');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,780,290);
+  let n1=parseInt(document.getElementById('uNum1').value);
+  let d1=parseInt(document.getElementById('uDen1').value);
+  let n2=parseInt(document.getElementById('uNum2').value);
+  let d2=parseInt(document.getElementById('uDen2').value);
+
+  drawFractionBar(ctx,40,80,700,50,n1,d1,'#6c5ce7',`分数1: ${n1}/${d1}`);
+  drawFractionBar(ctx,40,170,700,50,n2,d2,'#e17055',`分数2: ${n2}/${d2}`);
+
+  ctx.fillStyle='#e74c3c';ctx.font='bold 16px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(`分母 ${d1} 和 ${d2} 不同，不能直接${unlikeOp==='uadd'?'相加':'相减'}！需要先通分。`,390,260);
+}
+
+function drawUnlikeStep1() {
+  let c=document.getElementById('cUnlike');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,780,290);
+  let n1=parseInt(document.getElementById('uNum1').value);
+  let d1=parseInt(document.getElementById('uDen1').value);
+  let n2=parseInt(document.getElementById('uNum2').value);
+  let d2=parseInt(document.getElementById('uDen2').value);
+  let L=LCM(d1,d2);
+  let newN1=n1*(L/d1), newN2=n2*(L/d2);
+
+  drawFractionBar(ctx,40,50,700,45,newN1,L,'#6c5ce7',`通分后: ${newN1}/${L} = ${n1}/${d1}`);
+  drawFractionBar(ctx,40,140,700,45,newN2,L,'#e17055',`通分后: ${newN2}/${L} = ${n2}/${d2}`);
+
+  ctx.fillStyle='#888';ctx.font='14px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(`最小公分母 = ${L}`,390,220);
+  ctx.fillText(`${n1}/${d1} = ${newN1}/${L}  ·  ${n2}/${d2} = ${newN2}/${L}`,390,240);
+}
+
+function drawUnlikeStep2() {
+  let c=document.getElementById('cUnlike');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,780,290);
+  let n1=parseInt(document.getElementById('uNum1').value);
+  let d1=parseInt(document.getElementById('uDen1').value);
+  let n2=parseInt(document.getElementById('uNum2').value);
+  let d2=parseInt(document.getElementById('uDen2').value);
+  let L=LCM(d1,d2);
+  let newN1=n1*(L/d1), newN2=n2*(L/d2);
+  let result=unlikeOp==='uadd'?newN1+newN2:Math.max(0,newN1-newN2);
+
+  drawFractionBar(ctx,40,50,700,40,newN1,L,'#6c5ce7',`${newN1}/${L}`);
+  ctx.fillStyle='#333';ctx.font='bold 20px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';ctx.fillText(unlikeOp==='uadd'?'+':'-',390,115);
+  drawFractionBar(ctx,40,130,700,40,newN2,L,'#e17055',`${newN2}/${L}`);
+  drawFractionBar(ctx,40,210,700,45,result,L,'#00b894',`结果: ${result}/${L}`);
+}
+
+function drawUnlikeStep3() {
+  let c=document.getElementById('cUnlike');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,780,290);
+  let n1=parseInt(document.getElementById('uNum1').value);
+  let d1=parseInt(document.getElementById('uDen1').value);
+  let n2=parseInt(document.getElementById('uNum2').value);
+  let d2=parseInt(document.getElementById('uDen2').value);
+  let L=LCM(d1,d2);
+  let newN1=n1*(L/d1), newN2=n2*(L/d2);
+  let result=unlikeOp==='uadd'?newN1+newN2:Math.max(0,newN1-newN2);
+  let [sn,sd]=simplify(result,L);
+
+  drawFractionBar(ctx,180,100,400,50,result,L,'#00b894',`${result}/${L}`,'');
+  if(sn!==result||sd!==L){
+    drawFractionBar(ctx,180,190,400,50,sn,sd,'#00b894','','');
+    ctx.fillStyle='#e17055';ctx.font='bold 18px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';ctx.fillText(`约分: ${result}/${L} = ${sn}/${sd}`,390,270);
+  }else{
+    ctx.fillStyle='#00b894';ctx.font='bold 18px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';ctx.fillText('已是最简分数，无需约分!',390,270);
+  }
+}
+
+function updateUnlikeStep() {
+  for(let i=1;i<=4;i++){
+    let el=document.getElementById('us'+i);
+    el.classList.remove('done','active');
+    if(i<unlikeStep+1)el.classList.add('done');
+    if(i===unlikeStep+1)el.classList.add('active');
+  }
+  let hints=[
+    `第1步：观察两个分数的分母不同，不能直接${unlikeOp==='uadd'?'相加':'相减'}`,
+    '第2步：找到最小公分母，将两个分数通分',
+    `第3步：分母相同了，可以直接${unlikeOp==='uadd'?'相加':'相减'}分子`,
+    '第4步：如果结果能约分，化简得到最终答案'
+  ];
+  document.getElementById('unlikeHint').textContent=hints[unlikeStep]||'完成！';
+
+  if(unlikeStep===0)drawUnlikeStep0();
+  else if(unlikeStep===1)drawUnlikeStep1();
+  else if(unlikeStep===2)drawUnlikeStep2();
+  else if(unlikeStep===3)drawUnlikeStep3();
+
+  document.getElementById('btnUnlikeNext').textContent=
+    unlikeStep===3?'完成':['下一步：通分','下一步：运算','下一步：约分','完成'][unlikeStep];
+
+  let n1=parseInt(document.getElementById('uNum1').value);
+  let d1=parseInt(document.getElementById('uDen1').value);
+  let n2=parseInt(document.getElementById('uNum2').value);
+  let d2=parseInt(document.getElementById('uDen2').value);
+  let L=LCM(d1,d2);
+  let fn1=n1*(L/d1), fn2=n2*(L/d2);
+  let result=unlikeOp==='uadd'?fn1+fn2:Math.max(0,fn1-fn2);
+  let [sn,sd]=simplify(result,L);
+
+  if(unlikeStep===0)document.getElementById('unlikeFormula').innerHTML=`${n1}/${d1} ${unlikeOp==='uadd'?'+':'-'} ${n2}/${d2} = ? (分母不同，需要先通分)`;
+  else if(unlikeStep===1)document.getElementById('unlikeFormula').innerHTML=`=${fn1}/${L} ${unlikeOp==='uadd'?'+':'-'} ${fn2}/${L} = ?`;
+  else if(unlikeStep===2)document.getElementById('unlikeFormula').innerHTML=`= <span class="big">${result}/${L}</span>`;
+  else if(unlikeStep===3&&(sn!==result||sd!==L))document.getElementById('unlikeFormula').innerHTML=`= <span class="big">${result}/${L} = ${sn}/${sd}</span>`;
+  else if(unlikeStep===3)document.getElementById('unlikeFormula').innerHTML=`= <span class="big">${result}/${L}</span> (已最简)`;
+}
+
+document.getElementById('btnUnlikeNext').addEventListener('click',()=>{
+  if(unlikeStep<3)unlikeStep++;
+  updateUnlikeStep();
+});
+document.getElementById('btnUnlikeReset').addEventListener('click',()=>{
+  unlikeStep=0;updateUnlikeStep();
+});
+document.getElementById('uNum1').addEventListener('input',()=>{unlikeStep=0;updateUnlikeStep();});
+document.getElementById('uDen1').addEventListener('input',()=>{unlikeStep=0;updateUnlikeStep();});
+document.getElementById('uNum2').addEventListener('input',()=>{unlikeStep=0;updateUnlikeStep();});
+document.getElementById('uDen2').addEventListener('input',()=>{unlikeStep=0;updateUnlikeStep();});
+document.querySelectorAll('#sec-unlike .op-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#sec-unlike .op-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    unlikeOp=b.dataset.op;
+    unlikeStep=0;updateUnlikeStep();
+  });
+});
+updateUnlikeStep();
+
+// ==================== Tab 5: 综合练习 ====================
+const QUIZ_DATA=[
+  {q:'3/8 + 2/8 = ?',opts:['5/8','5/16','6/8','1/8'],ans:0,explain:'同分母相加：分子相加，分母不变。3/8+2/8=5/8',visType:'like',visN1:3,visD:8,visN2:2},
+  {q:'1/3 + 1/4 = ?',opts:['2/7','7/12','1/12','2/12'],ans:1,explain:'通分：1/3=4/12，1/4=3/12，相加得7/12',visType:'unlike',visN1:1,visD1:3,visN2:1,visD2:4},
+  {q:'3/4 - 1/2 = ?',opts:['2/2','1/4','2/4','1/2'],ans:1,explain:'通分：1/2=2/4，3/4-2/4=1/4',visType:'unlike',visN1:3,visD1:4,visN2:1,visD2:2},
+  {q:'3/5 + 2/5 = ?',opts:['5/10','1','5/5','5/5=1'],ans:3,explain:'3/5+2/5=5/5=1',visType:'like',visN1:3,visD:5,visN2:2},
+  {q:'2/3 - 1/6 = ?',opts:['1/2','1/3','3/6','2/3'],ans:0,explain:'通分：2/3=4/6，4/6-1/6=3/6=1/2',visType:'unlike',visN1:2,visD1:3,visN2:1,visD2:6},
+  {q:'5/12 + 1/3 = ?',opts:['6/12','1/2','3/4','6/15'],ans:2,explain:'通分：1/3=4/12，5/12+4/12=9/12=3/4',visType:'unlike',visN1:5,visD1:12,visN2:1,visD2:3},
+  {q:'7/8 - 3/8 = ?',opts:['4/8=1/2','4/0','10/8','4/16'],ans:0,explain:'7/8-3/8=4/8=1/2',visType:'like',visN1:7,visD:8,visN2:3},
+  {q:'1/2 + 1/3 = ?',opts:['2/5','5/6','3/6','1/6'],ans:1,explain:'通分：1/2=3/6，1/3=2/6，相加=5/6',visType:'unlike',visN1:1,visD1:2,visN2:1,visD2:3},
+];
+let qzIdx=0,qzCorrect=0,qzLocked=false;
+
+function drawQuizVis(q) {
+  let c=document.getElementById('cQuiz');
+  let ctx=c.getContext('2d');
+  clearCanvas(c,600,160);
+  if(!q.visType)return;
+  if(q.visType==='like'){
+    drawFractionBar(ctx,40,20,520,30,q.visN1,q.visD,'#6c5ce7',`${q.visN1}/${q.visD}`);
+    drawFractionBar(ctx,40,65,520,30,q.visN2,q.visD,'#e17055',`${q.visN2}/${q.visD}`);
+  }else if(q.visType==='unlike'){
+    let L=LCM(q.visD1,q.visD2);
+    let newN1=q.visN1*(L/q.visD1), newN2=q.visN2*(L/q.visD2);
+    drawFractionBar(ctx,40,20,520,30,newN1,L,'#6c5ce7',`${q.visN1}/${q.visD1} = ${newN1}/${L}`);
+    drawFractionBar(ctx,40,70,520,30,newN2,L,'#e17055',`${q.visN2}/${q.visD2} = ${newN2}/${L}`);
+  }
+}
+
+function loadQuiz(idx) {
+  if(idx>=QUIZ_DATA.length){showQZSummary();return;}
+  qzLocked=false;
+  document.getElementById('qzFeedback').textContent='';
+  document.getElementById('qzFeedback').className='feedback';
+  document.getElementById('btnNextQz').style.display='none';
+  document.getElementById('qzProgress').textContent='第 '+(idx+1)+' / '+QUIZ_DATA.length+' 题';
+  let q=QUIZ_DATA[idx];
+  document.getElementById('qzQuestion').textContent=(idx+1)+'. '+q.q;
+  drawQuizVis(q);
+  let optsDiv=document.getElementById('qzOptions');
+  optsDiv.innerHTML='';
+  q.opts.forEach((opt,i)=>{
+    let btn=document.createElement('div');
+    btn.className='quiz-option';
+    btn.textContent=String.fromCharCode(65+i)+'. '+opt;
+    btn.addEventListener('click',()=>answerQZ(idx,i,btn));
+    optsDiv.appendChild(btn);
+  });
+}
+function answerQZ(idx,chosen,btn){
+  if(qzLocked)return;qzLocked=true;
+  let q=QUIZ_DATA[idx];
+  let all=document.querySelectorAll('#qzOptions .quiz-option');
+  if(chosen===q.ans){qzCorrect++;btn.classList.add('correct');document.getElementById('qzFeedback').textContent='正确！'+q.explain;document.getElementById('qzFeedback').className='feedback correct';}
+  else{btn.classList.add('wrong');all[q.ans].classList.add('correct');document.getElementById('qzFeedback').textContent='错误。'+q.explain;document.getElementById('qzFeedback').className='feedback wrong';}
+  all.forEach(o=>o.style.pointerEvents='none');
+  document.getElementById('btnNextQz').style.display='inline-block';
+  document.getElementById('btnNextQz').textContent=idx<QUIZ_DATA.length-1?'下一题':'查看成绩';
+}
+function showQZSummary(){
+  document.getElementById('qzArea').style.display='none';
+  let s=document.getElementById('qzSummary');s.style.display='block';
+  let total=QUIZ_DATA.length;
+  let msg=qzCorrect===total?'太棒了！全部正确！':qzCorrect>=total*0.75?'很不错，继续加油！':qzCorrect>=total*0.5?'还需要多多练习！':'建议回到前面重新学习一遍！';
+  s.innerHTML='<div class="score">'+qzCorrect+' / '+total+'</div><div class="msg">'+msg+'</div><button class="btn btn-accent" style="margin-top:14px" onclick="restartQuiz()">重新练习</button>';
+}
+function restartQuiz(){qzIdx=0;qzCorrect=0;qzLocked=false;document.getElementById('qzArea').style.display='block';document.getElementById('qzSummary').style.display='none';loadQuiz(0);}
+document.getElementById('btnNextQz').addEventListener('click',()=>{if(!qzLocked)return;qzIdx++;loadQuiz(qzIdx);});
+
+// ==================== Tab 切换 ====================
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    tab.classList.add('active');
+    let sec=document.getElementById('sec-'+tab.dataset.id);
+    if(sec)sec.classList.add('active');
+    if(tab.dataset.id==='sense')drawSense();
+    if(tab.dataset.id==='common')drawCommon();
+    if(tab.dataset.id==='like')drawLike();
+    if(tab.dataset.id==='unlike'){unlikeStep=0;updateUnlikeStep();}
+    if(tab.dataset.id==='practice'){qzIdx=0;qzCorrect=0;qzLocked=false;document.getElementById('qzArea').style.display='block';document.getElementById('qzSummary').style.display='none';loadQuiz(0);}
+  });
+});
+</script>
+</body>
+</html>
