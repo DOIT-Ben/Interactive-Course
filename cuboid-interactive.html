@@ -101,22 +101,7 @@ body{
 }
 .feedback-toast.show{opacity:1}
 
-.fill-cube{
-  position:absolute;left:50%;top:50%;
-  transform-style:preserve-3d;
-  opacity:0;pointer-events:none;
-  transition:opacity 0.15s,transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-}
-.fill-cube .fcf{
-  position:absolute;left:0;top:0;width:100%;height:100%;
-  border:0.5px solid rgba(0,0,0,0.12);box-sizing:border-box;
-}
-.fill-cube .fc-front{background:#f56262}
-.fill-cube .fc-back{background:#b33131}
-.fill-cube .fc-top{background:#ff7979}
-.fill-cube .fc-bottom{background:#9b2c2c}
-.fill-cube .fc-left{background:#c0392b}
-.fill-cube .fc-right{background:#eb4d4d}
+
 
 .mode-hint{
   text-align:center;color:#888;font-size:12px;margin-top:4px;min-height:18px;
@@ -195,6 +180,7 @@ body{
         <div class="cuboid-face" id="f4" style="background:rgba(230,126,34,0.85)">左</div>
         <div class="cuboid-face" id="f5" style="background:rgba(211,84,0,0.85)">右</div>
         <div id="cubeContainer" style="position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;pointer-events:none"></div>
+        <canvas id="fillCanvas" style="position:absolute;top:0;left:0;pointer-events:none;z-index:50;display:none"></canvas>
       </div>
 
       <div class="drag-handle label-l" id="hL" style="display:none">
@@ -473,89 +459,157 @@ function animateExplode(){
   requestAnimationFrame(step);
 }
 
+let fillCanvas,fillCtx,fillData=null;
+
+function initFillCanvas(){
+  fillCanvas=document.getElementById('fillCanvas');
+  fillCtx=fillCanvas.getContext('2d');
+}
+
+function drawFillCube(cx,cy,x3d,y3d,z3d,cs){
+  let rzx=rx*Math.PI/180,rzy=ry*Math.PI/180;
+  let hcs=cs/2;
+
+  let p000=project3D(x3d-hcs,y3d+hcs,z3d-hcs,rzx,rzy);
+  let p100=project3D(x3d+hcs,y3d+hcs,z3d-hcs,rzx,rzy);
+  let p110=project3D(x3d+hcs,y3d+hcs,z3d+hcs,rzx,rzy);
+  let p010=project3D(x3d-hcs,y3d+hcs,z3d+hcs,rzx,rzy);
+  let p001=project3D(x3d-hcs,y3d-hcs,z3d-hcs,rzx,rzy);
+  let p101=project3D(x3d+hcs,y3d-hcs,z3d-hcs,rzx,rzy);
+  let p111=project3D(x3d+hcs,y3d-hcs,z3d+hcs,rzx,rzy);
+  let p011=project3D(x3d-hcs,y3d-hcs,z3d+hcs,rzx,rzy);
+
+  let pts=[
+    {p:[p001,p011,p111,p101],c:'#ff7979',dz:(p001.dz+p011.dz+p111.dz+p101.dz)/4},
+    {p:[p010,p110,p111,p011],c:'#f56262',dz:(p010.dz+p110.dz+p111.dz+p011.dz)/4},
+    {p:[p101,p111,p110,p100],c:'#eb4d4d',dz:(p101.dz+p111.dz+p110.dz+p100.dz)/4},
+  ];
+
+  pts.sort((a,b)=>b.dz-a.dz);
+
+  pts.forEach(face=>{
+    fillCtx.fillStyle=face.c;
+    fillCtx.strokeStyle='rgba(0,0,0,0.3)';
+    fillCtx.lineWidth=0.5;
+    fillCtx.beginPath();
+    fillCtx.moveTo(cx+face.p[0].x,cy+face.p[0].y);
+    for(let i=1;i<4;i++)fillCtx.lineTo(cx+face.p[i].x,cy+face.p[i].y);
+    fillCtx.closePath();
+    fillCtx.fill();
+    fillCtx.stroke();
+  });
+}
+
+let fillAnimId=null;
+
 function animateFillCubes(){
   let iL=Math.round(L),iW=Math.round(W),iH=Math.round(H);
   let totalCubes=iL*iW*iH;
   let realV=L*W*H;
+  let cpl=iL*iW; // cubes per layer
 
-  let container=document.getElementById('cubeContainer');
-  container.innerHTML='';
+  if(!fillCanvas)initFillCanvas();
+  if(fillAnimId)cancelAnimationFrame(fillAnimId);
+
+  let rect=cuboidArea.getBoundingClientRect();
+  fillCanvas.width=rect.width;
+  fillCanvas.height=rect.height;
+  fillCanvas.style.display='block';
+  let cx=rect.width/2,cy=rect.height/2;
+  let cubeSize=SCALE*0.9;
 
   let faces=wrapper.children;
   for(let i=0;i<6;i++)faces[i].style.opacity='0.4';
 
-  let cw=SCALE*iL,ch=SCALE*iH;
-  container.style.width=cw+'px';
-  container.style.height=ch+'px';
-  container.style.marginLeft=(-cw/2)+'px';
-  container.style.marginTop=(-ch/2)+'px';
-
-  let cubeSize=Math.max(4,SCALE-6);
-  let s2=(cubeSize/2).toFixed(2);
-
-  let html='';
+  let cubes=[],layerStarts=[];
   for(let iz=0;iz<iH;iz++){
+    layerStarts.push(iz*350);
     for(let iy=0;iy<iW;iy++){
       for(let ix=0;ix<iL;ix++){
-        let x3d=((-iL/2+ix+0.5)*SCALE).toFixed(1);
-        let y3d=((-iH/2+iz+0.5)*SCALE).toFixed(1);
-        let z3d=((-iW/2+iy+0.5)*SCALE).toFixed(1);
-        let layerAttr=`data-layer="${iz}" data-row="${iy}" data-idx="${ix}"`;
-        html+=`<div class="fill-cube" ${layerAttr} style="margin-left:${-cubeSize/2}px;margin-top:${-cubeSize/2}px;width:${cubeSize}px;height:${cubeSize}px;transform:translate3d(${x3d}px,${y3d}px,${z3d}px) scale(0.01)"><div class="fcf fc-front" style="transform:translateZ(${s2}px)"></div><div class="fcf fc-back" style="transform:translateZ(${-s2}px) rotateY(180deg)"></div><div class="fcf fc-top" style="transform:translateY(${-s2}px) rotateX(90deg)"></div><div class="fcf fc-bottom" style="transform:translateY(${s2}px) rotateX(-90deg)"></div><div class="fcf fc-left" style="transform:translateX(${-s2}px) rotateY(-90deg)"></div><div class="fcf fc-right" style="transform:translateX(${s2}px) rotateY(90deg)"></div></div>`;
+        cubes.push({
+          x3d:(-iL/2+ix+0.5)*SCALE,
+          y3d:(-iH/2+iz+0.5)*SCALE,
+          z3d:(-iW/2+iy+0.5)*SCALE,
+          layer:iz
+        });
       }
     }
   }
-  container.innerHTML=html;
 
-  let cubeEls=container.querySelectorAll('.fill-cube');
   showToast('填充中... 共 '+totalCubes+' 个 1cm³ 小正方体');
 
-  let curLayer=0, done=0;
-  function revealLayer(){
-    if(curLayer>=iH){
+  let startTime=performance.now(),curLayer=-1;
+
+  function renderFill(t){
+    fillCtx.clearRect(0,0,fillCanvas.width,fillCanvas.height);
+    let elapsed=t-startTime;
+
+    let visibleCount=0;
+    for(let l=0;l<iH;l++){
+      if(elapsed>=layerStarts[l])visibleCount+=(l<iH-1?cpl:cubes.length-layerStarts[l]/350*cpl);
+      else break;
+    }
+    visibleCount=Math.min(totalCubes,Math.max(0,visibleCount));
+
+    let nowLayer=0;
+    for(let l=0;l<iH;l++)if(elapsed>=layerStarts[l])nowLayer=l+1;
+    if(nowLayer!==curLayer){
+      curLayer=nowLayer;
+      showToast('第 '+curLayer+'/'+iH+' 层已填充');
+    }
+
+    let layerFillTimes=[];
+    for(let l=0;l<iH;l++){
+      let nextStart=l+1<iH?layerStarts[l+1]:layerStarts[l]+500;
+      layerFillTimes.push({start:layerStarts[l],duration:nextStart-layerStarts[l]});
+    }
+
+    for(let i=0;i<visibleCount;i++){
+      let c=cubes[i];
+      let lt=layerFillTimes[c.layer];
+      let frac=Math.min(1,(elapsed-lt.start)/lt.duration);
+      let a=Math.min(1,frac*2);
+      fillCtx.globalAlpha=a;
+      drawFillCube(cx,cy,c.x3d,c.y3d,c.z3d,cubeSize);
+    }
+    fillCtx.globalAlpha=1;
+
+    if(visibleCount>=totalCubes&&elapsed>=layerStarts[iH-1]+800){
       setTimeout(()=>{
-        for(let i=0;i<6;i++)faces[i].style.opacity='0.85';
-        showToast('共 '+totalCubes+' 个 1cm³ 小正方体 = 体积 '+fmt(realV)+' cm³');
-        setTimeout(()=>{
-          cubeEls.forEach(el=>{
-            el.style.transition='opacity 0.4s,transform 0.4s';
-            el.style.opacity='0';
-            el.style.transform=el.style.transform.replace(/scale\([^)]+\)/,'scale(0.01)');
-          });
-          setTimeout(()=>container.innerHTML='',500);
-        },2500);
-      },400);
+        let fadeStart=performance.now();
+        function fadeOut(ft){
+          let fp=(ft-fadeStart)/600;
+          if(fp>=1){
+            fillCanvas.style.display='none';
+            fillAnimId=null;
+            for(let i=0;i<6;i++)faces[i].style.opacity='0.85';
+            showToast('共 '+totalCubes+' 个 1cm³ 小正方体 = 体积 '+fmt(realV)+' cm³');
+            return;
+          }
+          fillCtx.clearRect(0,0,fillCanvas.width,fillCanvas.height);
+          fillCtx.globalAlpha=1-fp;
+          for(let j=0;j<totalCubes;j++){
+            let c=cubes[j];
+            drawFillCube(cx,cy,c.x3d,c.y3d,c.z3d,cubeSize);
+          }
+          fillCtx.globalAlpha=1;
+          fillAnimId=requestAnimationFrame(fadeOut);
+        }
+        fillAnimId=requestAnimationFrame(fadeOut);
+      },600);
       return;
     }
-    let row=0;
-    function revealRow(){
-      if(row>=iW){
-        curLayer++;
-        showToast('第 '+curLayer+'/'+iH+' 层已填充');
-        setTimeout(revealLayer,350);
-        return;
-      }
-      for(let ix=0;ix<iL;ix++){
-        let el=cubeEls[curLayer*iW*iL+row*iL+ix];
-        if(el){
-          el.style.opacity='0.95';
-          el.style.transform=el.style.transform.replace('scale(0.01)','scale(1)');
-          done++;
-        }
-      }
-      row++;
-      setTimeout(revealRow,70);
-    }
-    revealRow();
+    fillAnimId=requestAnimationFrame(renderFill);
   }
-  setTimeout(revealLayer,400);
+  fillAnimId=requestAnimationFrame(renderFill);
 }
 
 function cleanFillCubes(){
+  if(fillAnimId)cancelAnimationFrame(fillAnimId);
+  fillAnimId=null;fillData=null;
+  if(fillCanvas)fillCanvas.style.display='none';
   let container=document.getElementById('cubeContainer');
   container.innerHTML='';
-  container.style.width='';container.style.height='';
-  container.style.marginLeft='';container.style.marginTop='';
   let faces=wrapper.children;
   for(let i=0;i<6;i++)faces[i].style.opacity='0.85';
 }
