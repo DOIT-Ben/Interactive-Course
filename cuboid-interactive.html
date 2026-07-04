@@ -101,15 +101,14 @@ body{
 }
 .feedback-toast.show{opacity:1}
 
-.fc{
-  position:absolute;left:50%;top:50%;
-  transform-style:preserve-3d;pointer-events:none;
+.fill-cell{
+  position:absolute;
+  background:linear-gradient(135deg,#ff7979 25%,#e74c3c 100%);
+  border:1px solid rgba(180,40,40,0.3);border-radius:2px;
+  box-shadow:0 0 2px rgba(0,0,0,0.3),inset 0 0 3px rgba(255,255,255,0.3);
   opacity:0;
-  transition:opacity 0.15s,transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-}
-.fc .ff{
-  position:absolute;left:50%;top:50%;
-  box-sizing:border-box;border:0.5px solid rgba(0,0,0,0.1);
+  transition:opacity 0.2s,transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  transform:scale(0.5);
 }
 
 
@@ -473,41 +472,32 @@ function animateFillCubes(){
   let iL=Math.round(L),iW=Math.round(W),iH=Math.round(H);
   let totalCubes=iL*iW*iH,realV=L*W*H;
 
-  let container=document.getElementById('cubeContainer');
-  container.innerHTML='';
+  cleanFillCubes();
 
-  let faces=wrapper.children;
-  for(let i=0;i<6;i++)faces[i].style.opacity='0.4';
+  let F0=FACES[0],F5=FACES[5],F2=FACES[2];
+  for(let i=0;i<6;i++)FACES[i].style.opacity='0.3';
 
-  let S=Math.max(4,SCALE-6),s2=(S/2).toFixed(2);
-  let centerCss=`left:50%;top:50%;margin-left:${-s2}px;margin-top:${-s2}px;width:${S}px;height:${S}px;`;
-  let faceCfg=[
-    {bg:'#f56262',t:`translateZ(${s2}px)`},
-    {bg:'#b33131',t:`translateZ(${-s2}px) rotateY(180deg)`},
-    {bg:'#ff7979',t:`translateY(${-s2}px) rotateX(90deg)`},
-    {bg:'#9b2c2c',t:`translateY(${s2}px) rotateX(-90deg)`},
-    {bg:'#c0392b',t:`translateX(${-s2}px) rotateY(-90deg)`},
-    {bg:'#eb4d4d',t:`translateX(${s2}px) rotateY(90deg)`},
-  ];
-
-  let html='';
-  for(let iz=0;iz<iH;iz++){
-    for(let iy=0;iy<iW;iy++){
-      for(let ix=0;ix<iL;ix++){
-        let x3d=((-iL/2+ix+0.5)*SCALE).toFixed(1);
-        let y3d=((-iH/2+iz+0.5)*SCALE).toFixed(1);
-        let z3d=((-iW/2+iy+0.5)*SCALE).toFixed(1);
-        html+=`<div class="fc" data-l="${iz}" style="${centerCss}transform:translate3d(${x3d}px,${y3d}px,${z3d}px) scale(0.01)">`;
-        for(let f=0;f<6;f++){
-          html+=`<div class="ff" style="${centerCss}background:${faceCfg[f].bg};transform:${faceCfg[f].t}"></div>`;
-        }
-        html+=`</div>`;
+  let cellSize=SCALE-2,gap=1;
+  function makeFaceCells(face,w,h,rows,cols,getRow){
+    let cells=[];
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        let rowIdx=getRow(r);
+        let el=document.createElement('div');
+        el.className='fill-cell';
+        el.style.cssText=`left:${c*SCALE+gap}px;top:${rowIdx*SCALE+gap}px;width:${cellSize}px;height:${cellSize}px`;
+        face.appendChild(el);
+        if(!cells[r])cells[r]=[];
+        cells[r][c]=el;
       }
     }
+    return cells;
   }
-  container.innerHTML=html;
 
-  let fcEls=container.querySelectorAll('.fc');
+  let fCells=makeFaceCells(F0,L*SCALE,H*SCALE,iH,iL,function(r){return iH-1-r;});
+  let rCells=makeFaceCells(F5,W*SCALE,H*SCALE,iH,iW,function(r){return iH-1-r;});
+  let tCells=makeFaceCells(F2,L*SCALE,W*SCALE,iW,iL,function(r){return iW-1-r;});
+
   showToast('填充中... 共 '+totalCubes+' 个 1cm³ 小正方体');
 
   let curLayer=0;
@@ -515,42 +505,36 @@ function animateFillCubes(){
     if(curLayer>=iH){
       setTimeout(()=>{
         showToast('共 '+totalCubes+' 个 1cm³ 小正方体 = 体积 '+fmt(realV)+' cm³');
-        setTimeout(()=>{
-          fcEls.forEach(el=>{
-            el.style.transition='opacity 0.4s,transform 0.4s';
-            el.style.opacity='0';
-            el.style.transform=el.style.transform.replace(/scale\(1\)/,'scale(0.01)');
-          });
-          setTimeout(()=>{
-            container.innerHTML='';
-            for(let i=0;i<6;i++)faces[i].style.opacity='0.85';
-          },500);
-        },2000);
-      },400);
+        setTimeout(()=>cleanFillCubes(),2000);
+      },500);
       return;
     }
     showToast('第 '+(curLayer+1)+'/'+iH+' 层已填充');
-    for(let iy=0;iy<iW;iy++){
-      for(let ix=0;ix<iL;ix++){
-        let idx=curLayer*iW*iL + iy*iL + ix;
-        let el=fcEls[idx];
-        if(el){
-          el.style.opacity='1';
-          el.style.transform=el.style.transform.replace('scale(0.01)','scale(1)');
+    for(let c=0;c<iL;c++){
+      let el=fCells[curLayer][c];
+      if(el){el.style.opacity='1';el.style.transform='scale(1)';}
+    }
+    for(let c=0;c<iW;c++){
+      let el=rCells[curLayer][c];
+      if(el){el.style.opacity='1';el.style.transform='scale(1)';}
+    }
+    curLayer++;
+    if(curLayer===iH){
+      for(let rr=0;rr<iW;rr++){
+        for(let cc=0;cc<iL;cc++){
+          let el=tCells[rr][cc];
+          if(el){el.style.opacity='1';el.style.transform='scale(1)';}
         }
       }
     }
-    curLayer++;
     setTimeout(revealLayer,400);
   }
   setTimeout(revealLayer,300);
 }
 
 function cleanFillCubes(){
-  let container=document.getElementById('cubeContainer');
-  container.innerHTML='';
-  let faces=wrapper.children;
-  for(let i=0;i<6;i++)faces[i].style.opacity='0.85';
+  document.querySelectorAll('.fill-cell').forEach(el=>el.remove());
+  for(let i=0;i<6;i++)FACES[i].style.opacity='0.85';
 }
 
 // ==================== Auto Rotate ====================
